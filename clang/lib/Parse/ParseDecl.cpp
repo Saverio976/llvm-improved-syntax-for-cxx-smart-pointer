@@ -2185,6 +2185,7 @@ bool Parser::MightBeDeclarator(DeclaratorContext Context) {
 
   case tok::amp:
   case tok::ampamp:
+  case tok::percent:
     return getLangOpts().CPlusPlus;
 
   case tok::l_square: // Might be an attribute on an unnamed bit-field.
@@ -6644,6 +6645,9 @@ static bool isPtrOperatorToken(tok::TokenKind Kind, const LangOptions &Lang,
   if (!Lang.CPlusPlus)
     return false;
 
+  if (Kind == tok::percent)
+    return true;
+
   if (Kind == tok::amp)
     return true;
 
@@ -6795,7 +6799,7 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
   SourceLocation Loc = ConsumeToken();  // Eat the *, ^, & or &&.
   D.SetRangeEnd(Loc);
 
-  if (Kind == tok::star || Kind == tok::caret) {
+  if (Kind == tok::star || Kind == tok::caret || Kind == tok::percent) {
     // Is a pointer.
     DeclSpec DS(AttrFactory);
 
@@ -6814,6 +6818,13 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
     if (Kind == tok::star)
       // Remember that we parsed a pointer type, and remember the type-quals.
       D.AddTypeInfo(DeclaratorChunk::getPointer(
+                        DS.getTypeQualifiers(), Loc, DS.getConstSpecLoc(),
+                        DS.getVolatileSpecLoc(), DS.getRestrictSpecLoc(),
+                        DS.getAtomicSpecLoc(), DS.getUnalignedSpecLoc()),
+                    std::move(DS.getAttributes()), SourceLocation());
+    else if (Kind == tok::percent)
+      // Remember that we parsed a unique pointer type, and remember the type-quals.
+      D.AddTypeInfo(DeclaratorChunk::getUniquePointer(
                         DS.getTypeQualifiers(), Loc, DS.getConstSpecLoc(),
                         DS.getVolatileSpecLoc(), DS.getRestrictSpecLoc(),
                         DS.getAtomicSpecLoc(), DS.getUnalignedSpecLoc()),
@@ -8350,6 +8361,7 @@ void Parser::ParseMisplacedBracketDeclarator(Declarator &D) {
   if (D.getNumTypeObjects() != 0) {
     switch (D.getTypeObject(D.getNumTypeObjects() - 1).Kind) {
     case DeclaratorChunk::Pointer:
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::Reference:
     case DeclaratorChunk::BlockPointer:
     case DeclaratorChunk::MemberPointer:

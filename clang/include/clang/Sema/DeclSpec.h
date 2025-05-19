@@ -1251,7 +1251,7 @@ struct DeclaratorChunk {
   DeclaratorChunk() {};
 
   enum {
-    Pointer, Reference, Array, Function, BlockPointer, MemberPointer, Paren, Pipe
+    Pointer, Reference, Array, Function, BlockPointer, MemberPointer, Paren, Pipe, UniquePointer
   } Kind;
 
   /// Loc - The place where this type was defined.
@@ -1648,6 +1648,7 @@ struct DeclaratorChunk {
     switch (Kind) {
     case DeclaratorChunk::Function:      return Fun.destroy();
     case DeclaratorChunk::Pointer:       return Ptr.destroy();
+    case DeclaratorChunk::UniquePointer: return Ptr.destroy();
     case DeclaratorChunk::BlockPointer:  return Cls.destroy();
     case DeclaratorChunk::Reference:     return Ref.destroy();
     case DeclaratorChunk::Array:         return Arr.destroy();
@@ -1671,6 +1672,26 @@ struct DeclaratorChunk {
                                     SourceLocation UnalignedQualLoc) {
     DeclaratorChunk I;
     I.Kind                = Pointer;
+    I.Loc                 = Loc;
+    new (&I.Ptr) PointerTypeInfo;
+    I.Ptr.TypeQuals       = TypeQuals;
+    I.Ptr.ConstQualLoc    = ConstQualLoc;
+    I.Ptr.VolatileQualLoc = VolatileQualLoc;
+    I.Ptr.RestrictQualLoc = RestrictQualLoc;
+    I.Ptr.AtomicQualLoc   = AtomicQualLoc;
+    I.Ptr.UnalignedQualLoc = UnalignedQualLoc;
+    return I;
+  }
+
+  /// Return a DeclaratorChunk for a UniquePointer.
+  static DeclaratorChunk getUniquePointer(unsigned TypeQuals, SourceLocation Loc,
+                                    SourceLocation ConstQualLoc,
+                                    SourceLocation VolatileQualLoc,
+                                    SourceLocation RestrictQualLoc,
+                                    SourceLocation AtomicQualLoc,
+                                    SourceLocation UnalignedQualLoc) {
+    DeclaratorChunk I;
+    I.Kind                = UniquePointer;
     I.Loc                 = Loc;
     new (&I.Ptr) PointerTypeInfo;
     I.Ptr.TypeQuals       = TypeQuals;
@@ -2465,6 +2486,7 @@ public:
       case DeclaratorChunk::Paren:
         continue;
       case DeclaratorChunk::Pointer:
+      case DeclaratorChunk::UniquePointer:
       case DeclaratorChunk::Reference:
       case DeclaratorChunk::Array:
       case DeclaratorChunk::BlockPointer:
