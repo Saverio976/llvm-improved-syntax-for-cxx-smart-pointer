@@ -48,6 +48,7 @@
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/ErrorHandling.h"
 #include <bitset>
+#include <iostream>
 #include <optional>
 
 using namespace clang;
@@ -442,6 +443,7 @@ static DeclaratorChunk *maybeMovePastReturnType(Declarator &declarator,
 
     // If we find anything except a function, bail out.
     case DeclaratorChunk::Pointer:
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::BlockPointer:
     case DeclaratorChunk::Array:
     case DeclaratorChunk::Reference:
@@ -571,6 +573,7 @@ static void distributeObjCPointerTypeAttrFromDeclarator(
 
     case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::Reference:
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Paren:
     case DeclaratorChunk::Array:
@@ -635,6 +638,7 @@ static void distributeFunctionTypeAttr(TypeProcessingState &state,
     case DeclaratorChunk::Array:
     case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::Reference:
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Pipe:
       continue;
@@ -4758,7 +4762,6 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
         T = S.GetTypeFromParser(D.getDeclSpec().getRepAsType());
 
         //T = S.BuildQualifiedType(Type.get().get(), DeclType.Loc, 0);
-
 
       }
       //T = S.BuildUniquePointerType(T, DeclType.Loc, Name);
