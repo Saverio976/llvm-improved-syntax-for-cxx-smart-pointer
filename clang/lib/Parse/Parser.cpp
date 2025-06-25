@@ -26,7 +26,6 @@
 #include "clang/Sema/SemaCodeCompletion.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TimeProfiler.h"
-#include <iostream>
 using namespace clang;
 
 

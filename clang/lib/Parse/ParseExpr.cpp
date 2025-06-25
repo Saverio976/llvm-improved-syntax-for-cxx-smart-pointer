@@ -40,9 +40,7 @@
 #include "clang/Sema/SemaSYCL.h"
 #include "clang/Sema/TypoCorrection.h"
 #include "llvm/ADT/SmallVector.h"
-#include <iostream>
 #include <optional>
-#include <ostream>
 using namespace clang;
 
 /// Simple precedence-based parser for binary/ternary operators.

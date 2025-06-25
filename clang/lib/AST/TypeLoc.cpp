@@ -73,7 +73,7 @@ public:
 /// Returns the alignment of the type source info data block.
 unsigned TypeLoc::getLocalAlignmentForType(QualType Ty) {
   if (Ty.isNull()) return 1;
-  return TypeAligner().Visit(TypeLoc(Ty, nullptr));;
+  return TypeAligner().Visit(TypeLoc(Ty, nullptr));
 }
 
 namespace {

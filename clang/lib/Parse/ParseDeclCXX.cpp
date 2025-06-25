@@ -31,7 +31,6 @@
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Support/TimeProfiler.h"
 #include <optional>
-#include <iostream>
 
 using namespace clang;
 
@@ -1450,7 +1449,6 @@ TypeResult Parser::ParseBaseTypeSpecifier(SourceLocation &BaseLoc,
     ParsePackIndexingType(DS);
     Declarator DeclaratorInfo(DS, ParsedAttributesView::none(),
                               DeclaratorContext::TypeName);
-
     return Actions.ActOnTypeName(DeclaratorInfo);
   }
 
@@ -1502,10 +1500,9 @@ TypeResult Parser::ParseBaseTypeSpecifier(SourceLocation &BaseLoc,
                                 TemplateName))
       return true;
     if (Tok.is(tok::annot_template_id) &&
-        takeTemplateIdAnnotation(Tok)->mightBeType()) {
+        takeTemplateIdAnnotation(Tok)->mightBeType())
       AnnotateTemplateIdTokenAsType(SS, ImplicitTypenameContext::No,
                                     /*IsClassName=*/true);
-    }
 
     // If we didn't end up with a typename token, there's nothing more we
     // can do.

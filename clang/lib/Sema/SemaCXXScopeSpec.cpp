@@ -20,7 +20,6 @@
 #include "clang/Sema/Lookup.h"
 #include "clang/Sema/Template.h"
 #include "llvm/ADT/STLExtras.h"
-#include <iostream>
 using namespace clang;
 
 /// Find the current instantiation that associated with the given type.
@@ -412,7 +411,7 @@ bool Sema::BuildCXXNestedNameSpecifier(Scope *S, NestedNameSpecInfo &IdInfo,
                                        bool OnlyNamespace) {
   if (IdInfo.Identifier->isEditorPlaceholder())
     return true;
-  LookupResult Found = LookupResult(*this, IdInfo.Identifier, IdInfo.IdentifierLoc,
+  LookupResult Found(*this, IdInfo.Identifier, IdInfo.IdentifierLoc,
                      OnlyNamespace ? LookupNamespaceName
                                    : LookupNestedNameSpecifierName);
   QualType ObjectType = GetTypeFromParser(IdInfo.ObjectType);
@@ -420,9 +419,8 @@ bool Sema::BuildCXXNestedNameSpecifier(Scope *S, NestedNameSpecInfo &IdInfo,
   // Determine where to perform name lookup
   DeclContext *LookupCtx = nullptr;
   bool isDependent = false;
-  if (IsCorrectedToColon) {
+  if (IsCorrectedToColon)
     *IsCorrectedToColon = false;
-  }
   if (!ObjectType.isNull()) {
     // This nested-name-specifier occurs in a member access expression, e.g.,
     // x->B::f, and we are looking into the type of the object.
@@ -446,9 +444,8 @@ bool Sema::BuildCXXNestedNameSpecifier(Scope *S, NestedNameSpecInfo &IdInfo,
 
     // The declaration context must be complete.
     if (!LookupCtx->isDependentContext() &&
-        RequireCompleteDeclContext(SS, LookupCtx)) {
+        RequireCompleteDeclContext(SS, LookupCtx))
       return true;
-    }
 
     LookupQualifiedName(Found, LookupCtx);
 
@@ -473,12 +470,10 @@ bool Sema::BuildCXXNestedNameSpecifier(Scope *S, NestedNameSpecInfo &IdInfo,
       // unqualified name lookup in the given scope (if available) or
       // reconstruct the result from when name lookup was performed at template
       // definition time.
-      if (S) {
+      if (S)
         LookupName(Found, S);
-      }
-      else if (ScopeLookupResult) {
+      else if (ScopeLookupResult)
         Found.addDecl(ScopeLookupResult);
-      }
 
       ObjectTypeSearchedInScope = true;
     }
@@ -487,9 +482,8 @@ bool Sema::BuildCXXNestedNameSpecifier(Scope *S, NestedNameSpecInfo &IdInfo,
     LookupName(Found, S);
   }
 
-  if (Found.isAmbiguous()) {
+  if (Found.isAmbiguous())
     return true;
-  }
 
   // If we performed lookup into a dependent context and did not find anything,
   // that's fine: just build a dependent nested-name-specifier.
@@ -498,9 +492,8 @@ bool Sema::BuildCXXNestedNameSpecifier(Scope *S, NestedNameSpecInfo &IdInfo,
         (!cast<CXXRecordDecl>(LookupCtx)->hasDefinition() ||
          !cast<CXXRecordDecl>(LookupCtx)->hasAnyDependentBases()))) {
     // Don't speculate if we're just trying to improve error recovery.
-    if (ErrorRecoveryLookup) {
+    if (ErrorRecoveryLookup)
       return true;
-    }
 
     // We were not able to compute the declaration context for a dependent
     // base object type or prior nested-name-specifier, so this
@@ -514,12 +507,10 @@ bool Sema::BuildCXXNestedNameSpecifier(Scope *S, NestedNameSpecInfo &IdInfo,
     // If identifier is not found as class-name-or-namespace-name, but is found
     // as other entity, don't look for typos.
     LookupResult R(*this, Found.getLookupNameInfo(), LookupOrdinaryName);
-    if (LookupCtx) {
+    if (LookupCtx)
       LookupQualifiedName(R, LookupCtx);
-    }
-    else if (S && !isDependent) {
+    else if (S && !isDependent)
       LookupName(R, S);
-    }
     if (!R.empty()) {
       // Don't diagnose problems with this speculative lookup.
       R.suppressDiagnostics();
@@ -607,9 +598,8 @@ bool Sema::BuildCXXNestedNameSpecifier(Scope *S, NestedNameSpecInfo &IdInfo,
                                 LookupNestedNameSpecifierName);
         LookupName(FoundOuter, S);
         OuterDecl = FoundOuter.getAsSingle<NamedDecl>();
-      } else {
+      } else
         OuterDecl = ScopeLookupResult;
-      }
 
       if (isAcceptableNestedNameSpecifier(OuterDecl) &&
           OuterDecl->getCanonicalDecl() != SD->getCanonicalDecl() &&

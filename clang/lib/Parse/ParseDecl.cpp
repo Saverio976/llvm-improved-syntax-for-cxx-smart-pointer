@@ -2631,7 +2631,6 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
       SkipMalformedDecl();
   }
 
-
   return Actions.FinalizeDeclaratorGroup(getCurScope(), DS, DeclsInGroup);
 }
 
@@ -3813,9 +3812,8 @@ void Parser::ParseDeclarationSpecifiers(
         goto DoneWithDeclSpec;
 
       CXXScopeSpec SS;
-      if (TemplateInfo.TemplateParams) {
+      if (TemplateInfo.TemplateParams)
         SS.setTemplateParamLists(*TemplateInfo.TemplateParams);
-      }
       Actions.RestoreNestedNameSpecifierAnnotation(Tok.getAnnotationValue(),
                                                    Tok.getAnnotationRange(),
                                                    SS);
@@ -3912,9 +3910,8 @@ void Parser::ParseDeclarationSpecifiers(
           isConstructorDeclarator(/*Unqualified=*/false,
                                   /*DeductionGuide=*/false,
                                   DS.isFriendSpecified(),
-                                  &TemplateInfo)) {
+                                  &TemplateInfo))
         goto DoneWithDeclSpec;
-      }
 
       // C++20 [temp.spec] 13.9/6.
       // This disables the access checking rules for function template explicit
@@ -3955,7 +3952,6 @@ void Parser::ParseDeclarationSpecifiers(
         goto DoneWithDeclSpec;
       }
 
-
       DS.getTypeSpecScope() = SS;
       ConsumeAnnotationToken(); // The C++ scope.
 
@@ -3973,15 +3969,12 @@ void Parser::ParseDeclarationSpecifiers(
     case tok::annot_typename: {
       // If we've previously seen a tag definition, we were almost surely
       // missing a semicolon after it.
-      if (DS.hasTypeSpecifier() && DS.hasTagDefinition()) {
+      if (DS.hasTypeSpecifier() && DS.hasTagDefinition())
         goto DoneWithDeclSpec;
-      }
 
       TypeResult T = getTypeAnnotation(Tok);
       isInvalid = DS.SetTypeSpecType(DeclSpec::TST_typename, Loc, PrevSpec,
                                      DiagID, T, Policy);
-
-
       if (isInvalid)
         break;
 
@@ -4017,7 +4010,6 @@ void Parser::ParseDeclarationSpecifiers(
       if (DS.hasTypeSpecifier())
         goto DoneWithDeclSpec;
 
-
       // If the token is an identifier named "__declspec" and Microsoft
       // extensions are not enabled, it is likely that there will be cascading
       // parse errors if this really is a __declspec attribute. Attempt to
@@ -4042,7 +4034,6 @@ void Parser::ParseDeclarationSpecifiers(
           continue;
         }
       }
-
 
       // In C++, check to see if this is a scope specifier like foo::bar::, if
       // so handle it as such.  This is important for ctor parsing.
@@ -6831,15 +6822,14 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
                         DS.getVolatileSpecLoc(), DS.getRestrictSpecLoc(),
                         DS.getAtomicSpecLoc(), DS.getUnalignedSpecLoc()),
                     std::move(DS.getAttributes()), SourceLocation());
-    else if (Kind == tok::percent) {
-      // TODO:TODO: change type to something
+    else if (Kind == tok::percent)
       // Remember that we parsed a unique pointer type, and remember the type-quals.
       D.AddTypeInfo(DeclaratorChunk::getUniquePointer(
                         DS.getTypeQualifiers(), Loc, DS.getConstSpecLoc(),
                         DS.getVolatileSpecLoc(), DS.getRestrictSpecLoc(),
                         DS.getAtomicSpecLoc(), DS.getUnalignedSpecLoc()),
                     std::move(DS.getAttributes()), SourceLocation());
-    } else
+    else
       // Remember that we parsed a Block type, and remember the type-quals.
       D.AddTypeInfo(
           DeclaratorChunk::getBlockPointer(DS.getTypeQualifiers(), Loc),
@@ -6968,9 +6958,8 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
   if (getLangOpts().CPlusPlus && D.mayHaveIdentifier()) {
     // This might be a C++17 structured binding.
     if (Tok.is(tok::l_square) && !D.mayOmitIdentifier() &&
-        D.getCXXScopeSpec().isEmpty()) {
+        D.getCXXScopeSpec().isEmpty())
       return ParseDecompositionDeclarator(D);
-    }
 
     // Don't parse FOO:BAR as if it were a typo for FOO::BAR inside a class, in
     // this context it is a bitfield. Also in range-based for statement colon
@@ -7142,7 +7131,6 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
     }
   }
 
-
   if (Tok.is(tok::l_paren)) {
     // If this might be an abstract-declarator followed by a direct-initializer,
     // check whether this is a valid declarator chunk. If it can't be, assume
@@ -7236,16 +7224,13 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
     D.setInvalidType(true);
   }
 
-
  PastIdentifier:
   assert(D.isPastIdentifier() &&
          "Haven't past the location of the identifier yet?");
 
   // Don't parse attributes unless we have parsed an unparenthesized name.
-  if (D.hasName() && !D.getNumTypeObjects()) {
+  if (D.hasName() && !D.getNumTypeObjects())
     MaybeParseCXX11Attributes(D);
-  }
-
 
   while (true) {
     if (Tok.is(tok::l_paren)) {

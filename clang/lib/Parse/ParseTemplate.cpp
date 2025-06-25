@@ -22,8 +22,6 @@
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/SemaDiagnostic.h"
 #include "llvm/Support/TimeProfiler.h"
-#include <iostream>
-#include <ostream>
 using namespace clang;
 
 /// Re-enter a possible template scope, creating as many template parameter
@@ -1079,7 +1077,6 @@ bool Parser::ParseGreaterThanInTemplateList(SourceLocation LAngleLoc,
   //
   // Objective-C allows this in its type parameter / argument lists.
 
-
   SourceLocation TokBeforeGreaterLoc = PrevTokLocation;
   SourceLocation TokLoc = Tok.getLocation();
   Token Next = NextToken();
@@ -1196,7 +1193,6 @@ bool Parser::ParseTemplateIdAfterTemplateName(bool ConsumeLastToken,
                                               TemplateArgList &TemplateArgs,
                                               SourceLocation &RAngleLoc,
                                               TemplateTy Template) {
-
   assert(Tok.is(tok::less) && "Must have already parsed the template-name");
 
   // Consume the '<'.
@@ -1208,9 +1204,8 @@ bool Parser::ParseTemplateIdAfterTemplateName(bool ConsumeLastToken,
     GreaterThanIsOperatorScope G(GreaterThanIsOperator, false);
     if (!Tok.isOneOf(tok::greater, tok::greatergreater,
                      tok::greatergreatergreater, tok::greaterequal,
-                     tok::greatergreaterequal)) {
+                     tok::greatergreaterequal))
       Invalid = ParseTemplateArgumentList(TemplateArgs, Template, LAngleLoc);
-    }
 
     if (Invalid) {
       // Try to find the closing '>'.
@@ -1352,7 +1347,6 @@ bool Parser::AnnotateTemplateIdToken(TemplateTy Template, TemplateNameKind TNK,
   // In case the tokens were cached, have Preprocessor replace them with the
   // annotation token.
   PP.AnnotateCachedTokens(Tok);
-
   return false;
 }
 
@@ -1369,7 +1363,7 @@ bool Parser::AnnotateTemplateIdToken(TemplateTy Template, TemplateNameKind TNK,
 /// denotes a dependent type.
 /// \param IsClassName Is this template-id appearing in a context where we
 /// know it names a class, such as in an elaborated-type-specifier or
-/// base-specifier? ('typename' and 'template' are unneeded and disallowed)
+/// base-specifier? ('typename' and 'template' are unneeded and disallowed
 /// in those contexts.)
 void Parser::AnnotateTemplateIdTokenAsType(
     CXXScopeSpec &SS, ImplicitTypenameContext AllowImplicitTypename,
@@ -1536,12 +1530,10 @@ ParsedTemplateArgument Parser::ParseTemplateArgument() {
   // Parse a non-type template argument.
   ExprResult ExprArg;
   SourceLocation Loc = Tok.getLocation();
-  if (getLangOpts().CPlusPlus11 && Tok.is(tok::l_brace)) {
+  if (getLangOpts().CPlusPlus11 && Tok.is(tok::l_brace))
     ExprArg = ParseBraceInitializer();
-  }
-  else {
+  else
     ExprArg = ParseConstantExpressionInExprEvalContext(MaybeTypeCast);
-  }
   if (ExprArg.isInvalid() || !ExprArg.get()) {
     return ParsedTemplateArgument();
   }
@@ -1561,6 +1553,7 @@ ParsedTemplateArgument Parser::ParseTemplateArgument() {
 bool Parser::ParseTemplateArgumentList(TemplateArgList &TemplateArgs,
                                        TemplateTy Template,
                                        SourceLocation OpenLoc) {
+
   ColonProtectionRAIIObject ColonProtection(*this, false);
 
   auto RunSignatureHelp = [&] {

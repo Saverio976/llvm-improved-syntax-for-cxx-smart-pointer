@@ -40,7 +40,6 @@
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/SaveAndRestore.h"
 
-#include <iostream>
 #include <optional>
 using namespace clang;
 using namespace sema;
@@ -236,9 +235,8 @@ TemplateNameKind Sema::isTemplateName(Scope *S,
     bool AnyFunctionTemplates = false;
     for (NamedDecl *FoundD : R) {
       if (NamedDecl *FoundTemplate = getAsTemplateNameDecl(FoundD)) {
-        if (isa<FunctionTemplateDecl>(FoundTemplate)) {
+        if (isa<FunctionTemplateDecl>(FoundTemplate))
           AnyFunctionTemplates = true;
-        }
         else {
           D = FoundTemplate;
           FoundUsingShadow = dyn_cast<UsingShadowDecl>(FoundD);
@@ -256,9 +254,8 @@ TemplateNameKind Sema::isTemplateName(Scope *S,
 
     // If the only templates were function templates, filter out the rest.
     // We'll diagnose the ambiguity later.
-    if (!D) {
+    if (!D)
       FilterAcceptableTemplateNames(R);
-    }
   }
 
   // At this point, we have either picked a single template name declaration D
@@ -3808,9 +3805,8 @@ TypeResult Sema::ActOnTemplateIdType(
 
   TemplateName Template = TemplateD.get();
   if (Template.getAsAssumedTemplateName() &&
-      resolveAssumedTemplateNameAsType(S, Template, TemplateIILoc)) {
+      resolveAssumedTemplateNameAsType(S, Template, TemplateIILoc))
     return true;
-  }
 
   // Translate the parser's template argument list in our AST format.
   TemplateArgumentListInfo TemplateArgs(LAngleLoc, RAngleLoc);
@@ -3836,9 +3832,8 @@ TypeResult Sema::ActOnTemplateIdType(
   }
 
   QualType SpecTy = CheckTemplateIdType(Template, TemplateIILoc, TemplateArgs);
-  if (SpecTy.isNull()) {
+  if (SpecTy.isNull())
     return true;
-  }
 
   // Build type-source information.
   TypeLocBuilder TLB;
@@ -3848,9 +3843,8 @@ TypeResult Sema::ActOnTemplateIdType(
   SpecTL.setTemplateNameLoc(TemplateIILoc);
   SpecTL.setLAngleLoc(LAngleLoc);
   SpecTL.setRAngleLoc(RAngleLoc);
-  for (unsigned i = 0, e = SpecTL.getNumArgs(); i != e; ++i) {
+  for (unsigned i = 0, e = SpecTL.getNumArgs(); i != e; ++i)
     SpecTL.setArgLocInfo(i, TemplateArgs[i].getLocInfo());
-  }
 
   // Create an elaborated-type-specifier containing the nested-name-specifier.
   QualType ElTy =

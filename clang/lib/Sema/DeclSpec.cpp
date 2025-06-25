@@ -23,8 +23,6 @@
 #include "clang/Sema/ParsedTemplate.h"
 #include "clang/Sema/Sema.h"
 #include <cstring>
-#include <iostream>
-#include <ostream>
 using namespace clang;
 
 
@@ -1160,9 +1158,8 @@ void DeclSpec::Finish(Sema &S, const PrintingPolicy &Policy) {
 
   // Check the type specifier components first. No checking for an invalid
   // type.
-  if (TypeSpecType == TST_error) {
+  if (TypeSpecType == TST_error)
     return;
-  }
 
   // If decltype(auto) is used, no other type specifiers are permitted.
   if (TypeSpecType == TST_decltype_auto &&

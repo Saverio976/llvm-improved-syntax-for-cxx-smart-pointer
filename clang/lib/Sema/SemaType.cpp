@@ -48,9 +48,7 @@
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/ErrorHandling.h"
 #include <bitset>
-#include <iostream>
 #include <optional>
-#include <ostream>
 
 using namespace clang;
 
@@ -4345,7 +4343,6 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
     }
   }
 
-
   // Determine whether we should infer _Nonnull on pointer types.
   std::optional<NullabilityKind> inferNullability;
   bool inferNullabilityCS = false;
@@ -5464,7 +5461,6 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
     }
   }
 
-
   if (ExpectNoDerefChunk)
     S.Diag(state.getDeclarator().getBeginLoc(),
            diag::warn_noderef_on_non_pointer_or_array);
@@ -5505,7 +5501,6 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
       }
     }
   }
-
 
   assert(!T.isNull() && "T must not be null after this point");
 
@@ -6334,9 +6329,8 @@ GetTypeSourceInfoForDeclarator(TypeProcessingState &State,
         D.getDeclSpec().getAttributes().hasMSPropertyAttr()) {
       continue;
     }
-    if (D.getTypeObject(i).Kind == DeclaratorChunk::UniquePointer) {
+    if (D.getTypeObject(i).Kind == DeclaratorChunk::UniquePointer)
       continue;
-    }
 
     // An AtomicTypeLoc might be produced by an atomic qualifier in this
     // declarator chunk.
@@ -6382,11 +6376,9 @@ GetTypeSourceInfoForDeclarator(TypeProcessingState &State,
       }
     }
 
-
     DeclaratorLocFiller(S.Context, State, D.getTypeObject(i)).Visit(CurrTL);
     CurrTL = CurrTL.getNextTypeLoc().getUnqualifiedLoc();
   }
-
 
   // If we have different source information for the return type, use
   // that.  This really only applies to C++ conversion functions.
@@ -6411,7 +6403,7 @@ ParsedType Sema::CreateParsedType(QualType T, TypeSourceInfo *TInfo) {
   new (LocT) LocInfoType(T, TInfo);
   assert(LocT->getTypeClass() != T->getTypeClass() &&
          "LocInfoType's TypeClass conflicts with an existing Type class");
-  return ParsedType::make(QualType(LocT, 0));;
+  return ParsedType::make(QualType(LocT, 0));
 }
 
 void LocInfoType::getAsStringInternal(std::string &Str,
@@ -6421,7 +6413,6 @@ void LocInfoType::getAsStringInternal(std::string &Str,
          " GetTypeFromParser");
 }
 
-// TODO:TODO: maybe here change the type
 TypeResult Sema::ActOnTypeName(Declarator &D) {
   // C99 6.7.6: Type names have no identifier.  This is already validated by
   // the parser.

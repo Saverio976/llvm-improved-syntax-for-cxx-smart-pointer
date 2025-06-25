@@ -22,13 +22,11 @@
 #include "clang/Parse/RAIIObjectsForParser.h"
 #include "clang/Sema/DeclSpec.h"
 #include "clang/Sema/EnterExpressionEvaluationContext.h"
-#include "clang/Sema/Lookup.h"
 #include "clang/Sema/ParsedTemplate.h"
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/SemaCodeCompletion.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
-#include <iostream>
 #include <numeric>
 
 using namespace clang;
@@ -371,9 +369,8 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
           getCurScope(), SS, TemplateKWLoc, TemplateName, ObjectType,
           EnteringContext, Template, /*AllowInjectedClassName*/ true);
       if (AnnotateTemplateIdToken(Template, TNK, SS, TemplateKWLoc,
-                                  TemplateName, false)) {
+                                  TemplateName, false))
         return true;
-      }
 
       continue;
     }
@@ -442,9 +439,8 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
 
     // The rest of the nested-name-specifier possibilities start with
     // tok::identifier.
-    if (Tok.isNot(tok::identifier)) {
+    if (Tok.isNot(tok::identifier))
       break;
-    }
 
     IdentifierInfo &II = *Tok.getIdentifierInfo();
 

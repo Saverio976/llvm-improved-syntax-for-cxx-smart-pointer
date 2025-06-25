@@ -65,9 +65,7 @@
 #include "llvm/TargetParser/Triple.h"
 #include <algorithm>
 #include <cstring>
-#include <iostream>
 #include <optional>
-#include <ostream>
 #include <unordered_map>
 
 using namespace clang;
@@ -14847,7 +14845,6 @@ void Sema::FinalizeDeclaration(Decl *ThisDecl) {
   VarDecl *VD = dyn_cast_or_null<VarDecl>(ThisDecl);
   if (!VD)
     return;
-
 
   // Apply an implicit SectionAttr if '#pragma clang section bss|data|rodata' is active
   if (VD->hasGlobalStorage() && VD->isThisDeclarationADefinition() &&
