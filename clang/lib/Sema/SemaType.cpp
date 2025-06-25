@@ -6326,9 +6326,9 @@ GetTypeSourceInfoForDeclarator(TypeProcessingState &State,
     // Microsoft property fields can have multiple sizeless array chunks
     // (i.e. int x[][][]). Don't create more than one level of incomplete array.
     if (CurrTL.getTypeLocClass() == TypeLoc::IncompleteArray && e != 1 &&
-        D.getDeclSpec().getAttributes().hasMSPropertyAttr()) {
+        D.getDeclSpec().getAttributes().hasMSPropertyAttr())
       continue;
-    }
+
     if (D.getTypeObject(i).Kind == DeclaratorChunk::UniquePointer)
       continue;
 

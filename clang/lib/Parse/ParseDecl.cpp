@@ -3980,6 +3980,7 @@ void Parser::ParseDeclarationSpecifiers(
 
       DS.SetRangeEnd(Tok.getAnnotationEndLoc());
       ConsumeAnnotationToken(); // The typename
+
       continue;
     }
 
@@ -6776,7 +6777,6 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
   }
 
   tok::TokenKind Kind = Tok.getKind();
-
 
   if (D.getDeclSpec().isTypeSpecPipe() && !isPipeDeclarator(D)) {
     DeclSpec DS(AttrFactory);

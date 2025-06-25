@@ -625,6 +625,7 @@ Parser::isCXXConditionDeclarationOrInitStatement(bool CanBeInitStatement,
   ///   type-specifier-seq abstract-declarator[opt]
   ///
 bool Parser::isCXXTypeId(TentativeCXXTypeIdContext Context, bool &isAmbiguous) {
+
   isAmbiguous = false;
 
   // C++ 8.2p2:
