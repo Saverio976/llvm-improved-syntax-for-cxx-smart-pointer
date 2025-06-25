@@ -1811,11 +1811,6 @@ static QualType deduceOpenCLPointeeAddrSpace(Sema &S, QualType PointeeType) {
   return PointeeType;
 }
 
-QualType Sema::BuildUniquePointerType(QualType T,
-                                SourceLocation Loc, DeclarationName Entity) {
-  // TODO:TODO:
-}
-
 QualType Sema::BuildPointerType(QualType T,
                                 SourceLocation Loc, DeclarationName Entity) {
   if (T->isReferenceType()) {

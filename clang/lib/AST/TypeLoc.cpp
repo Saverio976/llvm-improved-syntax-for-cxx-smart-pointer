@@ -28,7 +28,6 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
-#include <iostream>
 
 using namespace clang;
 
@@ -74,8 +73,7 @@ public:
 /// Returns the alignment of the type source info data block.
 unsigned TypeLoc::getLocalAlignmentForType(QualType Ty) {
   if (Ty.isNull()) return 1;
-  auto r = TypeAligner().Visit(TypeLoc(Ty, nullptr)); 
-  return r;
+  return TypeAligner().Visit(TypeLoc(Ty, nullptr));;
 }
 
 namespace {

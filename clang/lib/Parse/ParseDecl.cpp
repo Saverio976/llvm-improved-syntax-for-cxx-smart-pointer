@@ -35,9 +35,7 @@
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringSwitch.h"
-#include <iostream>
 #include <optional>
-#include <ostream>
 
 using namespace clang;
 
@@ -451,9 +449,8 @@ void Parser::ParseAttributeWithTypeArg(IdentifierInfo &AttrName,
   Parens.consumeOpen();
 
   TypeResult T;
-  if (Tok.isNot(tok::r_paren)) {
+  if (Tok.isNot(tok::r_paren))
     T = ParseTypeName();
-  }
 
   if (Parens.consumeClose())
     return;
@@ -2492,7 +2489,6 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
     }
   }
 
-
   if (ParseAsmAttributesAfterDeclarator(D))
     return nullptr;
 
@@ -2549,7 +2545,6 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
     D.complete(ThisDecl);
     return Actions.FinalizeDeclaratorGroup(getCurScope(), DS, ThisDecl);
   }
-
 
   SmallVector<Decl *, 8> DeclsInGroup;
   Decl *FirstDecl =
@@ -3684,9 +3679,8 @@ void Parser::ParseDeclarationSpecifiers(
 
     switch (Tok.getKind()) {
     default:
-      if (Tok.isRegularKeywordAttribute()) {
+      if (Tok.isRegularKeywordAttribute())
         goto Attribute;
-      }
 
     DoneWithDeclSpec:
       if (!AttrsLastTime)
@@ -3810,15 +3804,13 @@ void Parser::ParseDeclarationSpecifiers(
           DS.SetTypeSpecError();
         goto DoneWithDeclSpec;
       }
-      if (Tok.is(tok::coloncolon)) { // ::new or ::delete
+      if (Tok.is(tok::coloncolon)) // ::new or ::delete
         goto DoneWithDeclSpec;
-      }
       continue;
 
     case tok::annot_cxxscope: {
-      if (DS.hasTypeSpecifier() || DS.isTypeAltiVecVector()) {
+      if (DS.hasTypeSpecifier() || DS.isTypeAltiVecVector())
         goto DoneWithDeclSpec;
-      }
 
       CXXScopeSpec SS;
       if (TemplateInfo.TemplateParams) {
@@ -3830,7 +3822,6 @@ void Parser::ParseDeclarationSpecifiers(
 
       // We are looking for a qualified typename.
       Token Next = NextToken();
-
 
       TemplateIdAnnotation *TemplateId = Next.is(tok::annot_template_id)
                                              ? takeTemplateIdAnnotation(Next)
@@ -3844,7 +3835,6 @@ void Parser::ParseDeclarationSpecifiers(
       }
 
       if (TemplateId && TemplateId->Kind == TNK_Type_template) {
-        // TODO:TODO
         // We have a qualified template-id, e.g., N::A<int>
 
         // If this would be a valid constructor declaration with template
@@ -3909,9 +3899,8 @@ void Parser::ParseDeclarationSpecifiers(
         continue;
       }
 
-      if (Next.isNot(tok::identifier)) {
+      if (Next.isNot(tok::identifier))
         goto DoneWithDeclSpec;
-      }
 
       // Check whether this is a constructor declaration. If we're in a
       // context where the identifier could be a class name, and it has the

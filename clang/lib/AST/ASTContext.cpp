@@ -92,7 +92,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <iostream>
 #include <map>
 #include <memory>
 #include <optional>
@@ -3056,9 +3055,8 @@ void ASTContext::setBlockVarCopyInit(const VarDecl*VD, Expr *CopyExpr,
 
 TypeSourceInfo *ASTContext::CreateTypeSourceInfo(QualType T,
                                                  unsigned DataSize) const {
-  if (!DataSize) {
+  if (!DataSize)
     DataSize = TypeLoc::getFullDataSizeForType(T);
-  }
   else
     assert(DataSize == TypeLoc::getFullDataSizeForType(T) &&
            "incorrect data size provided to CreateTypeSourceInfo!");

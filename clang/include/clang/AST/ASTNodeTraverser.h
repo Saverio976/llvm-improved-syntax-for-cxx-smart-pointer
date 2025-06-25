@@ -26,7 +26,6 @@
 #include "clang/AST/TypeLocVisitor.h"
 #include "clang/AST/TypeVisitor.h"
 #include "llvm/Support/SaveAndRestore.h"
-#include <iostream>
 
 namespace clang {
 
@@ -174,7 +173,6 @@ public:
   }
 
   void Visit(QualType T) {
-    std::cerr << "ASTNodeTraverser::Visit [start]" << std::endl;
     SplitQualType SQT = T.split();
     if (!SQT.Quals.hasQualifiers())
       return Visit(SQT.Ty);
@@ -183,7 +181,6 @@ public:
       getNodeDelegate().Visit(T);
       Visit(T.split().Ty);
     });
-    std::cerr << "ASTNodeTraverser::Visit [end]" << std::endl;
   }
 
   void Visit(const Type *T) {
