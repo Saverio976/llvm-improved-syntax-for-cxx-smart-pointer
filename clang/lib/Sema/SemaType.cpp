@@ -48,6 +48,7 @@
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/ErrorHandling.h"
 #include <bitset>
+#include <iostream>
 #include <optional>
 
 using namespace clang;
@@ -442,6 +443,7 @@ static DeclaratorChunk *maybeMovePastReturnType(Declarator &declarator,
 
     // If we find anything except a function, bail out.
     case DeclaratorChunk::Pointer:
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::BlockPointer:
     case DeclaratorChunk::Array:
     case DeclaratorChunk::Reference:
@@ -459,6 +461,7 @@ static DeclaratorChunk *maybeMovePastReturnType(Declarator &declarator,
         case DeclaratorChunk::Array:
         case DeclaratorChunk::Function:
         case DeclaratorChunk::Reference:
+        case DeclaratorChunk::UniquePointer:
         case DeclaratorChunk::Pipe:
           continue;
 
@@ -538,6 +541,7 @@ static void distributeObjCPointerTypeAttr(TypeProcessingState &state,
 
     // Don't walk through these.
     case DeclaratorChunk::Reference:
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Pipe:
       goto error;
@@ -567,6 +571,7 @@ static void distributeObjCPointerTypeAttrFromDeclarator(
       continue;
 
     case DeclaratorChunk::Reference:
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Paren:
     case DeclaratorChunk::Array:
@@ -630,6 +635,7 @@ static void distributeFunctionTypeAttr(TypeProcessingState &state,
     case DeclaratorChunk::BlockPointer:
     case DeclaratorChunk::Array:
     case DeclaratorChunk::Reference:
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Pipe:
       continue;
@@ -2830,6 +2836,7 @@ static void inferARCWriteback(TypeProcessingState &state,
     case DeclaratorChunk::Function:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Pipe:
+    case DeclaratorChunk::UniquePointer:
       return;
     }
   }
@@ -2969,6 +2976,7 @@ static void diagnoseRedundantReturnTypeQualifiers(Sema &S, QualType RetTy,
     case DeclaratorChunk::Function:
     case DeclaratorChunk::BlockPointer:
     case DeclaratorChunk::Reference:
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::Array:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Pipe:
@@ -4702,6 +4710,106 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
       if (DeclType.Ptr.TypeQuals)
         T = S.BuildQualifiedType(T, DeclType.Loc, DeclType.Ptr.TypeQuals);
       break;
+    case DeclaratorChunk::UniquePointer: {
+      // TODO:TODO: edit here
+      std::cout << "GetFullTypeForDeclarator <a9>" << std::endl;
+      CXXScopeSpec SS;
+      {
+        IdentifierInfo &stdIdent = Context.Idents.get("std");
+        DeclarationName declName = Context.DeclarationNames.getIdentifier(&stdIdent);
+        LookupResult Found = LookupResult(S, declName, DeclType.Loc,
+            Sema::LookupNameKind::LookupNestedNameSpecifierName);
+        S.LookupName(Found, S.getCurScope());
+        NamedDecl *SD =
+            Found.isSingleResult() ? Found.getRepresentativeDecl() : nullptr;
+        if (NamespaceDecl *Namespace = dyn_cast<NamespaceDecl>(SD)) {
+          std::cout << "GetFullTypeForDeclarator <Casted to Namespace>" << std::endl;
+          SS.Extend(Context, Namespace, DeclType.Loc, DeclType.Loc);
+        }
+      }
+      std::cout << "SS.isValid() : " << SS.isValid() << std::endl;
+      OpaquePtr<TemplateName> tName;
+      {
+        UnqualifiedId TemplateName;
+        TemplateName.setIdentifier(&Context.Idents.get("unique_ptr"), DeclType.Loc);
+        bool MemberOfUnknownSpecialization;
+        if (TemplateNameKind TNK = S.isTemplateName(
+              S.getCurScope(), SS,
+              false, TemplateName, nullptr,
+              false, tName, MemberOfUnknownSpecialization,
+              false)) {
+          std::cout << "GetFullTypeForDeclarator <AMAZING>" << std::endl;
+        } else {
+          std::cout << "GetFullTypeForDeclarator <Realy bad>" << std::endl;
+        }
+      }
+      // contains error in the std::unique_ptr template name
+      //{
+      //  NamedDecl *nDecl = nullptr;
+      //  {
+      //    DeclarationName TName = DeclarationName(&Context.Idents.get("unique_ptr"));
+      //    Sema::AssumedTemplateKind AssumedTemplate;
+      //    bool EnteringContext = false;
+      //    bool Disambiguation = false;
+      //    LookupResult R(S, TName, DeclType.Loc, Sema::LookupOrdinaryName);
+      //    ParsedType nUll = nullptr;
+      //    QualType nUllType = nUll.get();
+      //    S.LookupTemplateName(R, S.getCurScope(), SS, nUllType, EnteringContext,
+      //                          /*RequiredTemplate=*/SourceLocation(),
+      //                          &AssumedTemplate,
+      //                          /*AllowTypoCorrection=*/!Disambiguation);
+      //    nDecl = S.getAsTemplateNameDecl(*R.begin());
+      //  }
+      //  TemplateDecl *TD = cast<TemplateDecl>(nDecl);
+      //  TemplateName Template = TemplateName(TD);
+      //  TemplateNameKind TemplateKind = TNK_Type_template;
+      //  tName = OpaquePtr<TemplateName>::make(Template);
+      //  std::cerr << "dump::::0" << std::endl;
+      //  Template.dump();
+      //}
+      std::cout << "GetFullTypeForDeclarator <" << SS.isValid() << ">" << std::endl;
+      {
+        IdentifierInfo &idInfo = Context.Idents.get("unique_ptr");                                                  // TODO:TODO: put "unique_ptr" inside // FIX:
+        typedef SmallVector<ParsedTemplateArgument, 16> TemplateArgList;
+        TemplateArgList TemplateArgs;
+        // --- fix this
+        std::cerr << "dump::::T.dump():" << std::endl;
+        T.dump();
+        QualType Tn(T.getTypePtr(), 0);
+        std::cerr << "dump::::Tn.dump():" << std::endl;
+        Tn.dump();
+        TypeSourceInfo *TInfoTmp = S.Context.getTrivialTypeSourceInfo(Tn, D.getBeginLoc());;
+        std::cerr << "dump::::TInfoTmp->getType().dump()" << std::endl;
+        TInfoTmp->getType().dump();
+        TypeResult TypeArg = S.CreateParsedType(Tn, TInfoTmp);
+        std::cerr << "dump::::TypeArg.get().get().getTypePtr()->dump() " << TypeArg.get().get()->getTypeClass() << std::endl;
+        // TypeArg.get().get().getTypePtr()->dump();
+        std::cerr << "dump::::2.1" << std::endl;
+        // -- end fix this
+        ParsedTemplateArgument Arg = S.ActOnTemplateTypeArgument(TypeArg);
+        TemplateArgs.push_back(Arg);
+        ASTTemplateArgsPtr TemplateArgsPtr(TemplateArgs);
+        TypeResult Type = S.ActOnTemplateIdType(S.getCurScope(), SS, DeclType.Loc, tName, &idInfo, DeclType.Loc, DeclType.Loc, TemplateArgsPtr, DeclType.Loc, false, false, ImplicitTypenameContext::No);
+        AttributeFactory AttrFactory;
+        DeclSpec DSTmp(AttrFactory);
+        const char *PrevSpec;
+        unsigned int DiagID;
+        DSTmp.SetTypeSpecType(DeclSpec::TST_typename, DeclType.Loc, PrevSpec, DiagID, Type, S.getASTContext().getPrintingPolicy());
+        D.getMutableDeclSpec().ClearTypeSpecType();
+        D.getMutableDeclSpec().SetTypeSpecType(DeclSpec::TST_typename, DeclType.Loc, PrevSpec, DiagID, Type, S.getASTContext().getPrintingPolicy());
+        T = S.GetTypeFromParser(D.getDeclSpec().getRepAsType());
+
+        //T = S.BuildQualifiedType(Type.get().get(), DeclType.Loc, 0);
+
+        std::cerr << "dump::::3" << std::endl;
+
+        std::cout << "After modification" << std::endl;
+      }
+      //T = S.BuildUniquePointerType(T, DeclType.Loc, Name);
+      if (DeclType.Ptr.TypeQuals)
+        T = S.BuildQualifiedType(T, DeclType.Loc, DeclType.Ptr.TypeQuals);
+      break;
+    }
     case DeclaratorChunk::Reference: {
       // Verify that we're not building a reference to pointer to function with
       // exception specification.
@@ -7484,6 +7592,7 @@ static bool distributeNullabilityTypeAttr(TypeProcessingState &state,
 
     // Don't walk through these.
     case DeclaratorChunk::Reference:
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::Pipe:
       return false;
     }

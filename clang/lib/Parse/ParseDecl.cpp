@@ -6795,8 +6795,8 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
   }
 
   // Otherwise, '*' -> pointer, '^' -> block, '&' -> lvalue reference,
-  // '&&' -> rvalue reference
-  SourceLocation Loc = ConsumeToken();  // Eat the *, ^, & or &&.
+  // '&&' -> rvalue reference, '%' -> uniqu_pointer
+  SourceLocation Loc = ConsumeToken();  // Eat the *, ^, &, && or %.
   D.SetRangeEnd(Loc);
 
   if (Kind == tok::star || Kind == tok::caret || Kind == tok::percent) {
