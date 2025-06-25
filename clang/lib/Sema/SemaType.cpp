@@ -447,7 +447,6 @@ static DeclaratorChunk *maybeMovePastReturnType(Declarator &declarator,
     case DeclaratorChunk::BlockPointer:
     case DeclaratorChunk::Array:
     case DeclaratorChunk::Reference:
-    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Pipe:
       return result;
@@ -571,7 +570,6 @@ static void distributeObjCPointerTypeAttrFromDeclarator(
       innermost = i;
       continue;
 
-    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::Reference:
     case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::MemberPointer:
@@ -636,7 +634,6 @@ static void distributeFunctionTypeAttr(TypeProcessingState &state,
     case DeclaratorChunk::Pointer:
     case DeclaratorChunk::BlockPointer:
     case DeclaratorChunk::Array:
-    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::Reference:
     case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::MemberPointer:
