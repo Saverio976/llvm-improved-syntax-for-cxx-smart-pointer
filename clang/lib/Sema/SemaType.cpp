@@ -4712,7 +4712,6 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
       break;
     case DeclaratorChunk::UniquePointer: {
       // TODO:TODO: edit here
-      std::cout << "GetFullTypeForDeclarator <a9>" << std::endl;
       CXXScopeSpec SS;
       {
         IdentifierInfo &stdIdent = Context.Idents.get("std");
@@ -4723,11 +4722,9 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
         NamedDecl *SD =
             Found.isSingleResult() ? Found.getRepresentativeDecl() : nullptr;
         if (NamespaceDecl *Namespace = dyn_cast<NamespaceDecl>(SD)) {
-          std::cout << "GetFullTypeForDeclarator <Casted to Namespace>" << std::endl;
           SS.Extend(Context, Namespace, DeclType.Loc, DeclType.Loc);
         }
       }
-      std::cout << "SS.isValid() : " << SS.isValid() << std::endl;
       OpaquePtr<TemplateName> tName;
       {
         UnqualifiedId TemplateName;
@@ -4738,54 +4735,16 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
               false, TemplateName, nullptr,
               false, tName, MemberOfUnknownSpecialization,
               false)) {
-          std::cout << "GetFullTypeForDeclarator <AMAZING>" << std::endl;
         } else {
-          std::cout << "GetFullTypeForDeclarator <Realy bad>" << std::endl;
         }
       }
-      // contains error in the std::unique_ptr template name
-      //{
-      //  NamedDecl *nDecl = nullptr;
-      //  {
-      //    DeclarationName TName = DeclarationName(&Context.Idents.get("unique_ptr"));
-      //    Sema::AssumedTemplateKind AssumedTemplate;
-      //    bool EnteringContext = false;
-      //    bool Disambiguation = false;
-      //    LookupResult R(S, TName, DeclType.Loc, Sema::LookupOrdinaryName);
-      //    ParsedType nUll = nullptr;
-      //    QualType nUllType = nUll.get();
-      //    S.LookupTemplateName(R, S.getCurScope(), SS, nUllType, EnteringContext,
-      //                          /*RequiredTemplate=*/SourceLocation(),
-      //                          &AssumedTemplate,
-      //                          /*AllowTypoCorrection=*/!Disambiguation);
-      //    nDecl = S.getAsTemplateNameDecl(*R.begin());
-      //  }
-      //  TemplateDecl *TD = cast<TemplateDecl>(nDecl);
-      //  TemplateName Template = TemplateName(TD);
-      //  TemplateNameKind TemplateKind = TNK_Type_template;
-      //  tName = OpaquePtr<TemplateName>::make(Template);
-      //  std::cerr << "dump::::0" << std::endl;
-      //  Template.dump();
-      //}
-      std::cout << "GetFullTypeForDeclarator <" << SS.isValid() << ">" << std::endl;
       {
         IdentifierInfo &idInfo = Context.Idents.get("unique_ptr");                                                  // TODO:TODO: put "unique_ptr" inside // FIX:
         typedef SmallVector<ParsedTemplateArgument, 16> TemplateArgList;
         TemplateArgList TemplateArgs;
-        // --- fix this
-        std::cerr << "dump::::T.dump():" << std::endl;
-        T.dump();
         QualType Tn(T.getTypePtr(), 0);
-        std::cerr << "dump::::Tn.dump():" << std::endl;
-        Tn.dump();
         TypeSourceInfo *TInfoTmp = S.Context.getTrivialTypeSourceInfo(Tn, D.getBeginLoc());;
-        std::cerr << "dump::::TInfoTmp->getType().dump()" << std::endl;
-        TInfoTmp->getType().dump();
         TypeResult TypeArg = S.CreateParsedType(Tn, TInfoTmp);
-        std::cerr << "dump::::TypeArg.get().get().getTypePtr()->dump() " << TypeArg.get().get()->getTypeClass() << std::endl;
-        // TypeArg.get().get().getTypePtr()->dump();
-        std::cerr << "dump::::2.1" << std::endl;
-        // -- end fix this
         ParsedTemplateArgument Arg = S.ActOnTemplateTypeArgument(TypeArg);
         TemplateArgs.push_back(Arg);
         ASTTemplateArgsPtr TemplateArgsPtr(TemplateArgs);
@@ -4801,9 +4760,6 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
 
         //T = S.BuildQualifiedType(Type.get().get(), DeclType.Loc, 0);
 
-        std::cerr << "dump::::3" << std::endl;
-
-        std::cout << "After modification" << std::endl;
       }
       //T = S.BuildUniquePointerType(T, DeclType.Loc, Name);
       if (DeclType.Ptr.TypeQuals)
@@ -6371,6 +6327,9 @@ GetTypeSourceInfoForDeclarator(TypeProcessingState &State,
     // (i.e. int x[][][]). Don't create more than one level of incomplete array.
     if (CurrTL.getTypeLocClass() == TypeLoc::IncompleteArray && e != 1 &&
         D.getDeclSpec().getAttributes().hasMSPropertyAttr())
+      continue;
+
+    if (D.getTypeObject(i).Kind == DeclaratorChunk::UniquePointer)
       continue;
 
     // An AtomicTypeLoc might be produced by an atomic qualifier in this

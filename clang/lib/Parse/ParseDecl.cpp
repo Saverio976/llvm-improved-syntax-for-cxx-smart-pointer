@@ -6795,7 +6795,7 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
   }
 
   // Otherwise, '*' -> pointer, '^' -> block, '&' -> lvalue reference,
-  // '&&' -> rvalue reference, '%' -> uniqu_pointer
+  // '&&' -> rvalue reference, '%' -> unique pointer
   SourceLocation Loc = ConsumeToken();  // Eat the *, ^, &, && or %.
   D.SetRangeEnd(Loc);
 
