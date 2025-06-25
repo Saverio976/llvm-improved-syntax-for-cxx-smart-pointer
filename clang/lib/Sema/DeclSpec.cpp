@@ -773,7 +773,6 @@ bool DeclSpec::SetTypeSpecType(TST T, SourceLocation TagKwLoc,
                                const PrintingPolicy &Policy) {
   assert(isTypeRep(T) && "T does not store a type");
   assert(Rep && "no type provided!");
-  std::cout << "iik1" << std::endl;
   if (TypeSpecType == TST_error)
     return false;
   if (TypeSpecType != TST_unspecified) {
@@ -1156,14 +1155,12 @@ void DeclSpec::SaveWrittenBuiltinSpecs() {
 /// "_Complex" (lacking an FP type). After calling this method, DeclSpec is
 /// guaranteed to be self-consistent, even if an error occurred.
 void DeclSpec::Finish(Sema &S, const PrintingPolicy &Policy) {
-  std::cout << "DeclSpec::Finish <start>" << std::endl;
   // Before possibly changing their values, save specs as written.
   SaveWrittenBuiltinSpecs();
 
   // Check the type specifier components first. No checking for an invalid
   // type.
   if (TypeSpecType == TST_error) {
-    std::cout << "DeclSpec::Finish <end-1>" << std::endl;
     return;
   }
 
@@ -1508,7 +1505,6 @@ void DeclSpec::Finish(Sema &S, const PrintingPolicy &Policy) {
   // TODO: return "auto function" and other bad things based on the real type.
 
   // 'data definition has no type or storage class'?
-  std::cout << "DeclSpec::Finish <end>" << std::endl;
 }
 
 bool DeclSpec::isMissingDeclaratorOk() {

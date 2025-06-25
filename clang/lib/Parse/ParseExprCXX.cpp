@@ -163,12 +163,10 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
     bool EnteringContext, bool *MayBePseudoDestructor, bool IsTypename,
     const IdentifierInfo **LastII, bool OnlyNamespace, bool InUsingDeclaration,
     bool Disambiguation) {
-  std::cout << "Parser::ParseOptionalCXXScopeSpecifier <start>" << std::endl;
   assert(getLangOpts().CPlusPlus &&
          "Call sites of this function should be guarded by checking for C++");
 
   if (Tok.is(tok::annot_cxxscope)) {
-    std::cout << "Parser::ParseOptionalCXXScopeSpecifier <a1>" << std::endl;
     assert(!LastII && "want last identifier but have already annotated scope");
     assert(!MayBePseudoDestructor && "unexpected annot_cxxscope");
     Actions.RestoreNestedNameSpecifierAnnotation(Tok.getAnnotationValue(),
@@ -191,7 +189,6 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
   bool HasScopeSpecifier = false;
 
   if (Tok.is(tok::coloncolon)) {
-    std::cout << "Parser::ParseOptionalCXXScopeSpecifier <a2>" << std::endl;
     // ::new and ::delete aren't nested-name-specifiers.
     tok::TokenKind NextKind = NextToken().getKind();
     if (NextKind == tok::kw_new || NextKind == tok::kw_delete)
@@ -222,7 +219,6 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
 
   if (!HasScopeSpecifier &&
       Tok.isOneOf(tok::kw_decltype, tok::annot_decltype)) {
-    std::cout << "Parser::ParseOptionalCXXScopeSpecifier <a3>" << std::endl;
     DeclSpec DS(AttrFactory);
     SourceLocation DeclLoc = Tok.getLocation();
     SourceLocation EndLoc  = ParseDecltypeSpecifier(DS);
@@ -246,7 +242,6 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
            GetLookAheadToken(1).is(tok::ellipsis) &&
            GetLookAheadToken(2).is(tok::l_square) &&
            !GetLookAheadToken(3).is(tok::r_square)) {
-    std::cout << "Parser::ParseOptionalCXXScopeSpecifier <a4>" << std::endl;
     SourceLocation Start = Tok.getLocation();
     DeclSpec DS(AttrFactory);
     SourceLocation CCLoc;
@@ -288,7 +283,6 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
   // Preferred type might change when parsing qualifiers, we need the original.
   auto SavedType = PreferredType;
   while (true) {
-    std::cout << "Parser::ParseOptionalCXXScopeSpecifier <while true>" << std::endl;
     if (HasScopeSpecifier) {
       if (Tok.is(tok::code_completion)) {
         cutOffParsing();
@@ -324,7 +318,6 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
     // Parse the optional 'template' keyword, then make sure we have
     // 'identifier <' after it.
     if (Tok.is(tok::kw_template)) {
-      std::cout << "Parser::ParseOptionalCXXScopeSpecifier <a5>" << std::endl;
       // If we don't have a scope specifier or an object type, this isn't a
       // nested-name-specifier, since they aren't allowed to start with
       // 'template'.
@@ -336,12 +329,10 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
 
       UnqualifiedId TemplateName;
       if (Tok.is(tok::identifier)) {
-        std::cout << "Parser::ParseOptionalCXXScopeSpecifier <a6>" << std::endl;
         // Consume the identifier.
         TemplateName.setIdentifier(Tok.getIdentifierInfo(), Tok.getLocation());
         ConsumeToken();
       } else if (Tok.is(tok::kw_operator)) {
-        std::cout << "Parser::ParseOptionalCXXScopeSpecifier <a7>" << std::endl;
         // We don't need to actually parse the unqualified-id in this case,
         // because a simple-template-id cannot start with 'operator', but
         // go ahead and parse it anyway for consistency with the case where
@@ -361,7 +352,6 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
           break;
         }
       } else {
-        std::cout << "Parser::ParseOptionalCXXScopeSpecifier <a8>" << std::endl;
         TPA.Revert();
         break;
       }
@@ -370,7 +360,6 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
       // to a template name, such as T::template apply, but is not a
       // template-id.
       if (Tok.isNot(tok::less)) {
-        std::cout << "Parser::ParseOptionalCXXScopeSpecifier <a9>" << std::endl;
         TPA.Revert();
         break;
       }
@@ -381,10 +370,8 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
       TemplateNameKind TNK = Actions.ActOnTemplateName(
           getCurScope(), SS, TemplateKWLoc, TemplateName, ObjectType,
           EnteringContext, Template, /*AllowInjectedClassName*/ true);
-      std::cout << "call to AnnotateTemplateIdToken <e1>" << std::endl;
       if (AnnotateTemplateIdToken(Template, TNK, SS, TemplateKWLoc,
                                   TemplateName, false)) {
-        std::cout << "Parser::ParseOptionalCXXScopeSpecifier <b1>" << std::endl;
         return true;
       }
 
@@ -392,7 +379,6 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
     }
 
     if (Tok.is(tok::annot_template_id) && NextToken().is(tok::coloncolon)) {
-      std::cout << "Parser::ParseOptionalCXXScopeSpecifier <b2>" << std::endl;
       // We have
       //
       //   template-id '::'
@@ -457,7 +443,6 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
     // The rest of the nested-name-specifier possibilities start with
     // tok::identifier.
     if (Tok.isNot(tok::identifier)) {
-      std::cout << "Parser::ParseOptionalCXXScopeSpecifier <b3>" << std::endl;
       break;
     }
 
@@ -486,10 +471,8 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
         Next.setKind(tok::coloncolon);
       }
     }
-    std::cout << "Parser::ParseOptionalCXXScopeSpecifier <b4>" << std::endl;
 
     if (Next.is(tok::coloncolon) && GetLookAheadToken(2).is(tok::l_brace)) {
-      std::cout << "Parser::ParseOptionalCXXScopeSpecifier <b5>" << std::endl;
       // It is invalid to have :: {, consume the scope qualifier and pretend
       // like we never saw it.
       Token Identifier = Tok; // Stash away the identifier.
@@ -501,15 +484,12 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
     }
 
     if (Next.is(tok::coloncolon)) {
-      std::cout << "Parser::ParseOptionalCXXScopeSpecifier <b6>" << std::endl;
       if (CheckForDestructor && GetLookAheadToken(2).is(tok::tilde)) {
-        std::cout << "Parser::ParseOptionalCXXScopeSpecifier <b6.1>" << std::endl;
         *MayBePseudoDestructor = true;
         return false;
       }
 
       if (ColonIsSacred) {
-        std::cout << "Parser::ParseOptionalCXXScopeSpecifier <b6.2>" << std::endl;
         const Token &Next2 = GetLookAheadToken(2);
         if (Next2.is(tok::kw_private) || Next2.is(tok::kw_protected) ||
             Next2.is(tok::kw_public) || Next2.is(tok::kw_virtual)) {
@@ -541,7 +521,6 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
       if (Actions.ActOnCXXNestedNameSpecifier(
               getCurScope(), IdInfo, EnteringContext, SS, CorrectionFlagPtr,
               OnlyNamespace)) {
-        std::cout << "Parser::ParseOptionalCXXScopeSpecifier <b6.3>" << std::endl;
         // Identifier is not recognized as a nested name, but we can have
         // mistyped '::' instead of ':'.
         if (CorrectionFlagPtr && IsCorrectedToColon) {
@@ -562,7 +541,6 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
     // nested-name-specifier:
     //   type-name '<'
     if (Next.is(tok::less)) {
-      std::cout << "Parser::ParseOptionalCXXScopeSpecifier <b7> <{" << ObjectType.getAsOpaquePtr() << "," << EnteringContext << "," << Disambiguation << "}>" << std::endl;
 
       TemplateTy Template;
       UnqualifiedId TemplateName;
@@ -589,7 +567,6 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
         // token, and it might not be a type at all (e.g. a concept name in a
         // type-constraint).
         ConsumeToken();
-        std::cout << "call to AnnotateTemplateIdToken <e2>" << std::endl;
         if (AnnotateTemplateIdToken(Template, TNK, SS, SourceLocation(),
                                     TemplateName, false))
           return true;
@@ -620,7 +597,6 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
             getCurScope(), SS, /*TemplateKWLoc=*/SourceLocation(), TemplateName,
             ObjectType, EnteringContext, Template,
             /*AllowInjectedClassName=*/true);
-        std::cout << "call to AnnotateTemplateIdToken <e3>" << std::endl;
         if (AnnotateTemplateIdToken(Template, TNK, SS, SourceLocation(),
                                     TemplateName, false))
           return true;
@@ -628,70 +604,11 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
         continue;
       }
     }
-    std::cout << "Parser::ParseOptionalCXXScopeSpecifier <b8>" << std::endl;
-
-    //if (Next.is(tok::percent)) {
-    //  //CXXScopeSpec SS;
-    //  //{
-    //  //  IdentifierInfo &stdIdent = Actions.Context.Idents.get("std");
-    //  //  DeclarationName declName = Actions.Context.DeclarationNames.getIdentifier(&stdIdent);
-    //  //  LookupResult Found = LookupResult(Actions, declName, Next.getLocation(),
-    //  //      Sema::LookupNameKind::LookupNestedNameSpecifierName);
-    //  //  Actions.LookupName(Found, Actions.getCurScope());
-    //  //  NamedDecl *SD =
-    //  //      Found.isSingleResult() ? Found.getRepresentativeDecl() : nullptr;
-    //  //  if (NamespaceDecl *Namespace = dyn_cast<NamespaceDecl>(SD)) {
-    //  //    std::cout << "Parser::ParseDeclarationSpecifiers <Casted to Namespace>" << std::endl;
-    //  //    SS.Extend(Actions.Context, Namespace, Next.getLocation(), Next.getLocation());
-    //  //  }
-    //  //}
-    //  //OpaquePtr<TemplateName> tName;
-    //  //{
-    //  //  UnqualifiedId TemplateName;
-    //  //  TemplateName.setIdentifier(&Actions.Context.Idents.get("unique_ptr"), Next.getLocation());
-    //  //  bool MemberOfUnknownSpecialization;
-    //  //  if (TemplateNameKind TNK = Actions.isTemplateName(
-    //  //        Actions.getCurScope(), SS,
-    //  //        false, TemplateName, nullptr,
-    //  //        false, tName, MemberOfUnknownSpecialization,
-    //  //        false)) {
-    //  //    std::cout << "Parser::ParseDeclarationSpecifiers <AMAZING>" << std::endl;
-    //  //  } else {
-    //  //    std::cout << "Parser::ParseDeclarationSpecifiers <Realy bad>" << std::endl;
-    //  //  }
-    //  //}
-    //  //QualType TRes;
-    //  //{
-    //  //  IdentifierInfo &idInfo = Actions.Context.Idents.get("unique_ptr");                                                  // TODO:TODO: put "unique_ptr" inside // FIX:
-    //  //  typedef SmallVector<ParsedTemplateArgument, 16> TemplateArgList;
-    //  //  TemplateArgList TemplateArgs;
-    //  //  // --- fix this
-    //  //  QualType T = ;
-    //  //  QualType Tn(T.getTypePtr(), 0);
-    //  //  TypeSourceInfo *TInfoTmp = Actions.Context.getTrivialTypeSourceInfo(Tn, Next.getLocation());;
-    //  //  TypeResult TypeArg = Actions.CreateParsedType(Tn, TInfoTmp);
-    //  //  // -- end fix this
-    //  //  ParsedTemplateArgument Arg = Actions.ActOnTemplateTypeArgument(TypeArg);
-    //  //  TemplateArgs.push_back(Arg);
-    //  //  ASTTemplateArgsPtr TemplateArgsPtr(TemplateArgs);
-    //  //  TypeResult Type = Actions.ActOnTemplateIdType(Actions.getCurScope(), SS, Next.getLocation(), tName, &idInfo, Next.getLocation(), Next.getLocation(), TemplateArgsPtr, Next.getLocation(), false, false, ImplicitTypenameContext::No);
-
-    //  //  Tok.setKind(tok::annot_typename);
-    //  //  setTypeAnnotation(Tok, Type);
-
-    //  //  //ConsumeToken();
-
-    //  //  std::cerr << "dump::::3" << std::endl;
-
-    //  //  std::cout << "After modification" << std::endl;
-    //  //}
-    //}
 
     // We don't have any tokens that form the beginning of a
     // nested-name-specifier, so we're done.
     break;
   }
-  std::cout << "Parser::ParseOptionalCXXScopeSpecifier <b8>" << std::endl;
 
   // Even if we didn't see any pieces of a nested-name-specifier, we
   // still check whether there is a tilde in this position, which
@@ -2116,7 +2033,6 @@ ExprResult
 Parser::ParseCXXTypeConstructExpression(const DeclSpec &DS) {
   Declarator DeclaratorInfo(DS, ParsedAttributesView::none(),
                             DeclaratorContext::FunctionalCast);
-  std::cout << "-- IK7 --" << std::endl;
   ParsedType TypeRep = Actions.ActOnTypeName(DeclaratorInfo).get();
 
   assert((Tok.is(tok::l_paren) ||
@@ -2753,7 +2669,6 @@ bool Parser::ParseUnqualifiedIdTemplateId(
   // Parse the enclosed template argument list.
   SourceLocation LAngleLoc, RAngleLoc;
   TemplateArgList TemplateArgs;
-  std::cout << "call to ParseTemplateIdAfterTemplateName <a3>" << std::endl;
   if (ParseTemplateIdAfterTemplateName(true, LAngleLoc, TemplateArgs, RAngleLoc,
                                        Template))
     return true;
@@ -3035,7 +2950,6 @@ bool Parser::ParseUnqualifiedIdOperator(CXXScopeSpec &SS, bool EnteringContext,
   ParseDeclaratorInternal(D, /*DirectDeclParser=*/nullptr);
 
   // Finish up the type.
-  std::cout << "-- IK7.1 --" << std::endl;
   TypeResult Ty = Actions.ActOnTypeName(D);
   if (Ty.isInvalid())
     return true;
@@ -3483,7 +3397,6 @@ Parser::ParseCXXNewExpression(bool UseGlobal, SourceLocation Start) {
     ConstructorLParen = T.getOpenLocation();
     if (Tok.isNot(tok::r_paren)) {
       auto RunSignatureHelp = [&]() {
-        std::cout << "-- IK8 --" << std::endl;
         ParsedType TypeRep = Actions.ActOnTypeName(DeclaratorInfo).get();
         QualType PreferredType;
         // ActOnTypeName might adjust DeclaratorInfo and return a null type even
@@ -4277,7 +4190,6 @@ Parser::ParseCXXAmbiguousParenExpression(ParenParseOption &ExprType,
       if (DeclaratorInfo.isInvalidType())
         return ExprError();
 
-      std::cout << "-- IK9 --" << std::endl;
       TypeResult Ty = Actions.ActOnTypeName(DeclaratorInfo);
       return ParseCompoundLiteralExpression(Ty.get(),
                                             Tracker.getOpenLocation(),

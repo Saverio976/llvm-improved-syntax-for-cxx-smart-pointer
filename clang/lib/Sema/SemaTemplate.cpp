@@ -181,7 +181,6 @@ TemplateNameKind Sema::isTemplateName(Scope *S,
                                       TemplateTy &TemplateResult,
                                       bool &MemberOfUnknownSpecialization,
                                       bool Disambiguation) {
-  std::cout << "Sema::isTemplateName <start>" << std::endl;
   assert(getLangOpts().CPlusPlus && "No template names in C!");
 
   DeclarationName TName;
@@ -232,20 +231,15 @@ TemplateNameKind Sema::isTemplateName(Scope *S,
   NamedDecl *D = nullptr;
   UsingShadowDecl *FoundUsingShadow = dyn_cast<UsingShadowDecl>(*R.begin());
   if (R.isAmbiguous()) {
-    std::cout << "Sema::isTemplateName <aa1>" << std::endl;
     // If we got an ambiguity involving a non-function template, treat this
     // as a template name, and pick an arbitrary template for error recovery.
     bool AnyFunctionTemplates = false;
     for (NamedDecl *FoundD : R) {
-      std::cout << "Sema::isTemplateName <aa2>" << std::endl;
       if (NamedDecl *FoundTemplate = getAsTemplateNameDecl(FoundD)) {
-        std::cout << "Sema::isTemplateName <aa3>" << std::endl;
         if (isa<FunctionTemplateDecl>(FoundTemplate)) {
-          std::cout << "Sema::isTemplateName <aa3>" << std::endl;
           AnyFunctionTemplates = true;
         }
         else {
-          std::cout << "Sema::isTemplateName <aa4>" << std::endl;
           D = FoundTemplate;
           FoundUsingShadow = dyn_cast<UsingShadowDecl>(FoundD);
           break;
@@ -263,7 +257,6 @@ TemplateNameKind Sema::isTemplateName(Scope *S,
     // If the only templates were function templates, filter out the rest.
     // We'll diagnose the ambiguity later.
     if (!D) {
-      std::cout << "Sema::isTemplateName <aa5>" << std::endl;
       FilterAcceptableTemplateNames(R);
     }
   }
@@ -274,11 +267,9 @@ TemplateNameKind Sema::isTemplateName(Scope *S,
 
   TemplateName Template;
   TemplateNameKind TemplateKind;
-  std::cout << "Sema::isTemplateName <a1>" << std::endl;
 
   unsigned ResultCount = R.end() - R.begin();
   if (!D && ResultCount > 1) {
-    std::cout << "Sema::isTemplateName <a2>" << std::endl;
     // We assume that we'll preserve the qualifier from a function
     // template name in other ways.
     Template = Context.getOverloadedTemplateName(R.begin(), R.end());
@@ -287,9 +278,7 @@ TemplateNameKind Sema::isTemplateName(Scope *S,
     // We'll do this lookup again later.
     R.suppressDiagnostics();
   } else {
-    std::cout << "Sema::isTemplateName <a3>" << std::endl;
     if (!D) {
-      std::cout << "Sema::isTemplateName <aa6>" << std::endl;
       D = getAsTemplateNameDecl(*R.begin());
       assert(D && "unambiguous result is not a template name");
     }
@@ -300,13 +289,11 @@ TemplateNameKind Sema::isTemplateName(Scope *S,
       return TNK_Non_template;
     }
 
-    std::cout << "Sema::isTemplateName <FoundUsingShadow " << (FoundUsingShadow ? true : false) << ">" << std::endl;
     TemplateDecl *TD = cast<TemplateDecl>(D);
     Template =
         FoundUsingShadow ? TemplateName(FoundUsingShadow) : TemplateName(TD);
     assert(!FoundUsingShadow || FoundUsingShadow->getTargetDecl() == TD);
     if (!SS.isInvalid()) {
-      std::cout << "Sema::isTemplateName <a4>" << std::endl;
       NestedNameSpecifier *Qualifier = SS.getScopeRep();
       Template = Context.getQualifiedTemplateName(Qualifier, hasTemplateKeyword,
                                                   Template);
@@ -321,7 +308,6 @@ TemplateNameKind Sema::isTemplateName(Scope *S,
       assert(isa<ClassTemplateDecl>(TD) || isa<TemplateTemplateParmDecl>(TD) ||
              isa<TypeAliasTemplateDecl>(TD) || isa<VarTemplateDecl>(TD) ||
              isa<BuiltinTemplateDecl>(TD) || isa<ConceptDecl>(TD));
-      std::cout << "Sema::isTemplateName <a4.1 {" << isa<VarTemplateDecl>(TD) << "," << isa<ConceptDecl>(TD) << "}>" << std::endl;
       TemplateKind =
           isa<VarTemplateDecl>(TD) ? TNK_Var_template :
           isa<ConceptDecl>(TD) ? TNK_Concept_template :
@@ -330,7 +316,6 @@ TemplateNameKind Sema::isTemplateName(Scope *S,
   }
 
   TemplateResult = TemplateTy::make(Template);
-  std::cout << "Sema::isTemplateName <end>" << std::endl;
   return TemplateKind;
 }
 
@@ -965,7 +950,6 @@ static void maybeDiagnoseTemplateParameterShadow(Sema &SemaRef, Scope *S,
 }
 
 ParsedTemplateArgument Sema::ActOnTemplateTypeArgument(TypeResult ParsedType) {
-  std::cout << "Sema::ActOnTemplateTypeArgument <start>" << std::endl;
   TypeSourceInfo *TInfo;
   QualType T = GetTypeFromParser(ParsedType.get(), &TInfo);
   if (T.isNull())
@@ -1002,7 +986,6 @@ ParsedTemplateArgument Sema::ActOnTemplateTypeArgument(TypeResult ParsedType) {
   // argument is an injected-class-name for a template, it has a dual nature
   // and can be used as either a type or a template. We handle that in
   // convertTypeTemplateArgumentToTemplate.
-  std::cout << "Sema::ActOnTemplateTypeArgument <end>" << std::endl;
   return ParsedTemplateArgument(ParsedTemplateArgument::Type,
                                 ParsedType.get().getAsOpaquePtr(),
                                 TInfo->getTypeLoc().getBeginLoc());
@@ -3774,12 +3757,10 @@ TypeResult Sema::ActOnTemplateIdType(
     ASTTemplateArgsPtr TemplateArgsIn, SourceLocation RAngleLoc,
     bool IsCtorOrDtorName, bool IsClassName,
     ImplicitTypenameContext AllowImplicitTypename) {
-  std::cout << "Sema::ActOnTemplateIdType <start>" << std::endl;
   if (SS.isInvalid())
     return true;
 
   if (!IsCtorOrDtorName && !IsClassName && SS.isSet()) {
-    std::cout << "Sema::ActOnTemplateIdType <a1>" << std::endl;
     DeclContext *LookupCtx = computeDeclContext(SS, /*EnteringContext*/false);
 
     // C++ [temp.res]p3:
@@ -3805,7 +3786,6 @@ TypeResult Sema::ActOnTemplateIdType(
       // FIXME: This is not quite correct recovery as we don't transform SS
       // into the corresponding dependent form (and we don't diagnose missing
       // 'template' keywords within SS as a result).
-      std::cout << "Sema::ActOnTemplateIdType <end-0>" << std::endl;
       return ActOnTypenameType(nullptr, SourceLocation(), SS, TemplateKWLoc,
                                TemplateD, TemplateII, TemplateIILoc, LAngleLoc,
                                TemplateArgsIn, RAngleLoc);
@@ -3829,7 +3809,6 @@ TypeResult Sema::ActOnTemplateIdType(
   TemplateName Template = TemplateD.get();
   if (Template.getAsAssumedTemplateName() &&
       resolveAssumedTemplateNameAsType(S, Template, TemplateIILoc)) {
-    std::cout << "Sema::ActOnTemplateIdType <end-1>" << std::endl;
     return true;
   }
 
@@ -3838,7 +3817,6 @@ TypeResult Sema::ActOnTemplateIdType(
   translateTemplateArguments(TemplateArgsIn, TemplateArgs);
 
   if (DependentTemplateName *DTN = Template.getAsDependentTemplateName()) {
-    std::cout << "Sema::ActOnTemplateIdType <a2>" << std::endl;
     assert(SS.getScopeRep() == DTN->getQualifier());
     QualType T = Context.getDependentTemplateSpecializationType(
         ElaboratedTypeKeyword::None, *DTN, TemplateArgs.arguments());
@@ -3859,7 +3837,6 @@ TypeResult Sema::ActOnTemplateIdType(
 
   QualType SpecTy = CheckTemplateIdType(Template, TemplateIILoc, TemplateArgs);
   if (SpecTy.isNull()) {
-    std::cout << "Sema::ActOnTemplateIdType <end-3>" << std::endl;
     return true;
   }
 
@@ -3872,7 +3849,6 @@ TypeResult Sema::ActOnTemplateIdType(
   SpecTL.setLAngleLoc(LAngleLoc);
   SpecTL.setRAngleLoc(RAngleLoc);
   for (unsigned i = 0, e = SpecTL.getNumArgs(); i != e; ++i) {
-    std::cout << "Sema::ActOnTemplateIdType <a3>" << std::endl;
     SpecTL.setArgLocInfo(i, TemplateArgs[i].getLocInfo());
   }
 
@@ -3884,7 +3860,6 @@ TypeResult Sema::ActOnTemplateIdType(
   ElabTL.setElaboratedKeywordLoc(SourceLocation());
   if (!ElabTL.isEmpty())
     ElabTL.setQualifierLoc(SS.getWithLocInContext(Context));
-  std::cout << "Sema::ActOnTemplateIdType <end>" << std::endl;
   return CreateParsedType(ElTy, TLB.getTypeSourceInfo(Context, ElTy));
 }
 

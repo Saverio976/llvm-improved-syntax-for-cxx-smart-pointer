@@ -867,7 +867,6 @@ ExprResult Parser::ParseBuiltinPtrauthTypeDiscriminator() {
   if (T.expectAndConsume())
     return ExprError();
 
-  std::cout << "call to parse type name b2" << std::endl;
   TypeResult Ty = ParseTypeName();
   if (Ty.isInvalid()) {
     SkipUntil(tok::r_paren, StopAtSemi);
@@ -1326,7 +1325,6 @@ ExprResult Parser::ParseCastExpression(CastParseKind ParseKind,
 
             Declarator DeclaratorInfo(DS, ParsedAttributesView::none(),
                                       DeclaratorContext::TypeName);
-            std::cout << "-- IK1 --" << std::endl;
             TypeResult Ty = Actions.ActOnTypeName(DeclaratorInfo);
             if (Ty.isInvalid())
               break;
@@ -1622,7 +1620,6 @@ ExprResult Parser::ParseCastExpression(CastParseKind ParseKind,
 
       Declarator DeclaratorInfo(DS, ParsedAttributesView::none(),
                                 DeclaratorContext::TypeName);
-      std::cout << "-- IK2 --" << std::endl;
       TypeResult Ty = Actions.ActOnTypeName(DeclaratorInfo);
       if (Ty.isInvalid())
         break;
@@ -1731,7 +1728,6 @@ ExprResult Parser::ParseCastExpression(CastParseKind ParseKind,
         ParseOptionalCXXScopeSpecifier(SS, /*ObjectType=*/nullptr,
                                        /*ObjectHasErrors=*/false,
                                        /*EnteringContext=*/false);
-        std::cout << "call to AnnotateTemplateIdTokenAsType <d1>" << std::endl;
         AnnotateTemplateIdTokenAsType(SS, ImplicitTypenameContext::Yes);
         return ParseCastExpression(ParseKind, isAddressOfOperand, NotCastExpr,
                                    isTypeCast, isVectorLiteral,
@@ -1751,7 +1747,6 @@ ExprResult Parser::ParseCastExpression(CastParseKind ParseKind,
       // translate it into a type and continue parsing as a cast
       // expression.
       CXXScopeSpec SS;
-      std::cout << "call to AnnotateTemplateIdTokenAsType <d2>" << std::endl;
       AnnotateTemplateIdTokenAsType(SS, ImplicitTypenameContext::Yes);
       return ParseCastExpression(ParseKind, isAddressOfOperand,
                                  NotCastExpr, isTypeCast, isVectorLiteral,
@@ -2577,7 +2572,6 @@ ExprResult Parser::ParseSYCLUniqueStableNameExpression() {
                          "__builtin_sycl_unique_stable_name"))
     return ExprError();
 
-  std::cout << "call to parse type name b3" << std::endl;
   TypeResult Ty = ParseTypeName();
 
   if (Ty.isInvalid()) {
@@ -2785,7 +2779,6 @@ ExprResult Parser::ParseBuiltinPrimaryExpression() {
       Expr = ExprError();
     }
 
-    std::cout << "call to parse type name b4" << std::endl;
     TypeResult Ty = ParseTypeName();
 
     if (Tok.isNot(tok::r_paren)) {
@@ -2811,7 +2804,6 @@ ExprResult Parser::ParseBuiltinPrimaryExpression() {
     TypeResult Ty;
     {
       OffsetOfStateRAIIObject InOffsetof(*this, OOK);
-      std::cout << "call to parse type name b5" << std::endl;
       Ty = ParseTypeName();
       if (Ty.isInvalid()) {
         SkipUntil(tok::r_paren, StopAtSemi);
@@ -2938,7 +2930,6 @@ ExprResult Parser::ParseBuiltinPrimaryExpression() {
     }
 
     // Second argument is the type to bitcast to.
-    std::cout << "call to parse type name b6" << std::endl;
     TypeResult DestTy = ParseTypeName();
     if (DestTy.isInvalid())
       return ExprError();
@@ -2968,7 +2959,6 @@ ExprResult Parser::ParseBuiltinPrimaryExpression() {
     }
 
     // Second argument is the type to bitcast to.
-    std::cout << "call to parse type name b7" << std::endl;
     TypeResult DestTy = ParseTypeName();
     if (DestTy.isInvalid())
       return ExprError();
@@ -3185,7 +3175,6 @@ Parser::ParseParenExpression(ParenParseOption &ExprType, bool stopIfCastExpr,
                                           "__bridge_retained");
     }
 
-    std::cout << "call to parse type name b8" << std::endl;
     TypeResult Ty = ParseTypeName();
     T.consumeClose();
     ColonProtection.restore();
@@ -3233,7 +3222,6 @@ Parser::ParseParenExpression(ParenParseOption &ExprType, bool stopIfCastExpr,
       TypeResult Ty;
       {
         InMessageExpressionRAIIObject InMessage(*this, false);
-        std::cout << "-- IK3 --" << std::endl;
         Ty = Actions.ActOnTypeName(DeclaratorInfo);
       }
       Result = ParseObjCMessageExpressionBody(SourceLocation(),
@@ -3249,7 +3237,6 @@ Parser::ParseParenExpression(ParenParseOption &ExprType, bool stopIfCastExpr,
         TypeResult Ty;
         {
           InMessageExpressionRAIIObject InMessage(*this, false);
-          std::cout << "-- IK4 --" << std::endl;
           Ty = Actions.ActOnTypeName(DeclaratorInfo);
         }
         return ParseCompoundLiteralExpression(Ty.get(), OpenLoc, RParenLoc);
@@ -3262,7 +3249,6 @@ Parser::ParseParenExpression(ParenParseOption &ExprType, bool stopIfCastExpr,
           TypeResult Ty;
           {
             InMessageExpressionRAIIObject InMessage(*this, false);
-            std::cout << "-- IK5 --" << std::endl;
             Ty = Actions.ActOnTypeName(DeclaratorInfo);
           }
           if(Ty.isInvalid())
@@ -3310,7 +3296,6 @@ Parser::ParseParenExpression(ParenParseOption &ExprType, bool stopIfCastExpr,
           TypeResult Ty;
           {
             InMessageExpressionRAIIObject InMessage(*this, false);
-            std::cout << "-- IK6 --" << std::endl;
             Ty = Actions.ActOnTypeName(DeclaratorInfo);
           }
           CastTy = Ty.get();
@@ -3532,7 +3517,6 @@ ExprResult Parser::ParseGenericSelectionExpression() {
   TypeResult ControllingType;
   ExprResult ControllingExpr;
   if (isTypeIdForGenericSelection()) {
-    std::cout << "call to parse type name b9" << std::endl;
     ControllingType = ParseTypeName();
     if (ControllingType.isInvalid()) {
       SkipUntil(tok::r_paren, StopAtSemi);
@@ -3578,7 +3562,6 @@ ExprResult Parser::ParseGenericSelectionExpression() {
       Ty = nullptr;
     } else {
       ColonProtectionRAIIObject X(*this);
-      std::cout << "call to parse type name c1" << std::endl;
       TypeResult TR = ParseTypeName(nullptr, DeclaratorContext::Association);
       if (TR.isInvalid()) {
         SkipUntil(tok::r_paren, StopAtSemi);

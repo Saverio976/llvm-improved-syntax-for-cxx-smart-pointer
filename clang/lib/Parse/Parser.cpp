@@ -1970,7 +1970,6 @@ Parser::TryAnnotateName(CorrectionCandidateCallback *CCC,
       ConsumeToken();
     UnqualifiedId Id;
     Id.setIdentifier(Name, NameLoc);
-    std::cout << "call to AnnotateTemplateIdToken <a1>" << std::endl;
     if (AnnotateTemplateIdToken(
             TemplateTy::make(Classification.getTemplateName()),
             Classification.getTemplateNameKind(), SS, SourceLocation(), Id,
@@ -2223,7 +2222,6 @@ bool Parser::TryAnnotateTypeOrScopeTokenAfterScopeSpec(
             isTemplateArgumentList(1) != TPResult::False) {
           // Consume the identifier.
           ConsumeToken();
-          std::cout << "call to AnnotateTemplateIdToken <a2>" << std::endl;
           if (AnnotateTemplateIdToken(Template, TNK, SS, SourceLocation(),
                                       TemplateName)) {
             // If an unrecoverable error occurred, we need to return true here,
@@ -2248,7 +2246,6 @@ bool Parser::TryAnnotateTypeOrScopeTokenAfterScopeSpec(
       // template-id annotation in a context where we weren't allowed
       // to produce a type annotation token. Update the template-id
       // annotation token to a type annotation token now.
-      std::cout << "call to AnnotateTemplateIdTokenAsType <b1>" << std::endl;
       AnnotateTemplateIdTokenAsType(SS, AllowImplicitTypename);
       return false;
     }

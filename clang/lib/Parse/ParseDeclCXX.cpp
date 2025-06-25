@@ -771,7 +771,6 @@ Parser::DeclGroupPtrTy Parser::ParseUsingDeclaration(
       TemplateIdAnnotation *TemplateId = takeTemplateIdAnnotation(Tok);
 
       if (TemplateId->mightBeType()) {
-        std::cout << "call to AnnotateTemplateIdTokenAsType <a5>" << std::endl;
         AnnotateTemplateIdTokenAsType(SS, ImplicitTypenameContext::No,
                                       /*IsClassName=*/true);
 
@@ -980,7 +979,6 @@ Decl *Parser::ParseAliasDeclarationAfterDeclarator(
         << FixItHint::CreateRemoval(SourceRange(D.EllipsisLoc));
 
   Decl *DeclFromDeclSpec = nullptr;
-  std::cout << "call to parse type name a7" << std::endl;
   TypeResult TypeAlias =
       ParseTypeName(nullptr,
                     TemplateInfo.Kind ? DeclaratorContext::AliasTemplate
@@ -1374,7 +1372,6 @@ bool Parser::MaybeParseTypeTransformTypeSpecifier(DeclSpec &DS) {
                          tok::r_paren))
     return true;
 
-  std::cout << "call to parse type name a8" << std::endl;
   TypeResult Result = ParseTypeName();
   if (Result.isInvalid()) {
     SkipUntil(tok::r_paren, StopAtSemi);
@@ -1445,7 +1442,6 @@ TypeResult Parser::ParseBaseTypeSpecifier(SourceLocation &BaseLoc,
 
     Declarator DeclaratorInfo(DS, ParsedAttributesView::none(),
                               DeclaratorContext::TypeName);
-    std::cout << "-- IK10 --" << std::endl;
     return Actions.ActOnTypeName(DeclaratorInfo);
   }
 
@@ -1455,7 +1451,6 @@ TypeResult Parser::ParseBaseTypeSpecifier(SourceLocation &BaseLoc,
     Declarator DeclaratorInfo(DS, ParsedAttributesView::none(),
                               DeclaratorContext::TypeName);
 
-    std::cout << "-- IK11 --" << std::endl;
     return Actions.ActOnTypeName(DeclaratorInfo);
   }
 
@@ -1465,7 +1460,6 @@ TypeResult Parser::ParseBaseTypeSpecifier(SourceLocation &BaseLoc,
   if (Tok.is(tok::annot_template_id)) {
     TemplateIdAnnotation *TemplateId = takeTemplateIdAnnotation(Tok);
     if (TemplateId->mightBeType()) {
-      std::cout << "call to AnnotateTemplateIdTokenAsType <a6>" << std::endl;
       AnnotateTemplateIdTokenAsType(SS, ImplicitTypenameContext::No,
                                     /*IsClassName=*/true);
 
@@ -1504,13 +1498,11 @@ TypeResult Parser::ParseBaseTypeSpecifier(SourceLocation &BaseLoc,
     TemplateName.setIdentifier(Id, IdLoc);
 
     // Parse the full template-id, then turn it into a type.
-    std::cout << "call to AnnotateTemplateIdTokenAsType <a7>" << std::endl;
     if (AnnotateTemplateIdToken(Template, TNK, SS, SourceLocation(),
                                 TemplateName))
       return true;
     if (Tok.is(tok::annot_template_id) &&
         takeTemplateIdAnnotation(Tok)->mightBeType()) {
-      std::cout << "call to AnnotateTemplateIdTokenAsType <a8>" << std::endl;
       AnnotateTemplateIdTokenAsType(SS, ImplicitTypenameContext::No,
                                     /*IsClassName=*/true);
     }
@@ -1557,7 +1549,6 @@ TypeResult Parser::ParseBaseTypeSpecifier(SourceLocation &BaseLoc,
 
   Declarator DeclaratorInfo(DS, ParsedAttributesView::none(),
                             DeclaratorContext::TypeName);
-  std::cout << "-- IK12 --" << std::endl;
   return Actions.ActOnTypeName(DeclaratorInfo);
 }
 
@@ -1951,7 +1942,6 @@ void Parser::ParseClassSpecifier(tok::TokenKind TagTokKind,
       // a class (or template thereof).
       TemplateArgList TemplateArgs;
       SourceLocation LAngleLoc, RAngleLoc;
-      std::cout << "call to ParseTemplateIdAfterTemplateName <a2>" << std::endl;
       if (ParseTemplateIdAfterTemplateName(true, LAngleLoc, TemplateArgs,
                                            RAngleLoc)) {
         // We couldn't parse the template argument list at all, so don't
@@ -4154,7 +4144,6 @@ MemInitResult Parser::ParseMemInitializer(Decl *ConstructorDecl) {
                                            ? takeTemplateIdAnnotation(Tok)
                                            : nullptr;
     if (TemplateId && TemplateId->mightBeType()) {
-      std::cout << "call to AnnotateTemplateIdTokenAsType <a4>" << std::endl;
       AnnotateTemplateIdTokenAsType(SS, ImplicitTypenameContext::No,
                                     /*IsClassName=*/true);
       assert(Tok.is(tok::annot_typename) && "template-id -> type failed");
@@ -4397,7 +4386,6 @@ ExceptionSpecificationType Parser::ParseDynamicExceptionSpecification(
   // Parse the sequence of type-ids.
   SourceRange Range;
   while (Tok.isNot(tok::r_paren)) {
-    std::cout << "call to parse type name a9" << std::endl;
     TypeResult Res(ParseTypeName(&Range));
 
     if (Tok.is(tok::ellipsis)) {
@@ -4434,7 +4422,6 @@ TypeResult Parser::ParseTrailingReturnType(SourceRange &Range,
 
   ConsumeToken();
 
-  std::cout << "call to parse type name b1" << std::endl;
   return ParseTypeName(&Range, MayBeFollowedByDirectInit
                                    ? DeclaratorContext::TrailingReturnVar
                                    : DeclaratorContext::TrailingReturn);
