@@ -65,7 +65,9 @@
 #include "llvm/TargetParser/Triple.h"
 #include <algorithm>
 #include <cstring>
+#include <iostream>
 #include <optional>
+#include <ostream>
 #include <unordered_map>
 
 using namespace clang;
@@ -6292,6 +6294,8 @@ NamedDecl *Sema::HandleDeclarator(Scope *S, Declarator &D,
     return nullptr;
   } else if (DiagnoseUnexpandedParameterPack(NameInfo, UPPC_DeclarationType))
     return nullptr;
+
+  std::cout << Name.getAsString() << "' _id45" << std::endl;
 
   DeclContext *DC = CurContext;
   if (D.getCXXScopeSpec().isInvalid())
@@ -14845,6 +14849,8 @@ void Sema::FinalizeDeclaration(Decl *ThisDecl) {
   VarDecl *VD = dyn_cast_or_null<VarDecl>(ThisDecl);
   if (!VD)
     return;
+
+  std::cout << "coucou ?! : " << VD->getDeclName().getAsString() << std::endl;
 
   // Apply an implicit SectionAttr if '#pragma clang section bss|data|rodata' is active
   if (VD->hasGlobalStorage() && VD->isThisDeclarationADefinition() &&

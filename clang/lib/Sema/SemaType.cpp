@@ -48,7 +48,9 @@
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/ErrorHandling.h"
 #include <bitset>
+#include <iostream>
 #include <optional>
+#include <ostream>
 
 using namespace clang;
 
@@ -445,6 +447,7 @@ static DeclaratorChunk *maybeMovePastReturnType(Declarator &declarator,
     case DeclaratorChunk::BlockPointer:
     case DeclaratorChunk::Array:
     case DeclaratorChunk::Reference:
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Pipe:
       return result;
@@ -459,6 +462,7 @@ static DeclaratorChunk *maybeMovePastReturnType(Declarator &declarator,
         case DeclaratorChunk::Array:
         case DeclaratorChunk::Function:
         case DeclaratorChunk::Reference:
+        case DeclaratorChunk::UniquePointer:
         case DeclaratorChunk::Pipe:
           continue;
 
@@ -538,6 +542,7 @@ static void distributeObjCPointerTypeAttr(TypeProcessingState &state,
 
     // Don't walk through these.
     case DeclaratorChunk::Reference:
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Pipe:
       goto error;
@@ -566,6 +571,7 @@ static void distributeObjCPointerTypeAttrFromDeclarator(
       innermost = i;
       continue;
 
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::Reference:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Paren:
@@ -629,6 +635,7 @@ static void distributeFunctionTypeAttr(TypeProcessingState &state,
     case DeclaratorChunk::Pointer:
     case DeclaratorChunk::BlockPointer:
     case DeclaratorChunk::Array:
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::Reference:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Pipe:
@@ -714,6 +721,7 @@ static void distributeFunctionTypeAttrFromDeclarator(TypeProcessingState &state,
 static void distributeTypeAttrsFromDeclarator(TypeProcessingState &state,
                                               QualType &declSpecType,
                                               CUDAFunctionTarget CFT) {
+  std::cout << "distributeTypeAttrsFromDeclarator <start>" << std::endl;
   // The called functions in this loop actually remove things from the current
   // list, so iterating over the existing list isn't possible.  Instead, make a
   // non-owning copy and iterate over that.
@@ -748,6 +756,7 @@ static void distributeTypeAttrsFromDeclarator(TypeProcessingState &state,
       break;
     }
   }
+  std::cout << "distributeTypeAttrsFromDeclarator <end>" << std::endl;
 }
 
 /// Add a synthetic '()' to a block-literal declarator if it is
@@ -892,6 +901,7 @@ TSTToUnaryTransformType(DeclSpec::TST SwitchTST) {
 /// \returns The type described by the declaration specifiers.  This function
 /// never returns null.
 static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
+  std::cout << "ConvertDeclSpecToType <start>" << std::endl;
   // FIXME: Should move the logic from DeclSpec::Finish to here for validity
   // checking.
 
@@ -953,6 +963,7 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
     Result = Context.Char32Ty;
     break;
   case DeclSpec::TST_unspecified:
+    std::cout << "ConvertDeclSpecToType <c2>" << std::endl;
     // If this is a missing declspec in a block literal return context, then it
     // is inferred from the return statements inside the block.
     // The declspec is always missing in a lambda expr context; it is either
@@ -1194,6 +1205,7 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
   case DeclSpec::TST_union:
   case DeclSpec::TST_struct:
   case DeclSpec::TST_interface: {
+    std::cout << "ConvertDeclSpecToType <a5>" << std::endl;
     TagDecl *D = dyn_cast_or_null<TagDecl>(DS.getRepAsDecl());
     if (!D) {
       // This can happen in C++ with ambiguous lookups.
@@ -1221,6 +1233,7 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
     break;
   }
   case DeclSpec::TST_typename: {
+    std::cout << "ConvertDeclSpecToType <a8>" << std::endl;
     assert(DS.getTypeSpecWidth() == TypeSpecifierWidth::Unspecified &&
            DS.getTypeSpecComplex() == 0 &&
            DS.getTypeSpecSign() == TypeSpecifierSign::Unspecified &&
@@ -1235,6 +1248,7 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
   }
   case DeclSpec::TST_typeof_unqualType:
   case DeclSpec::TST_typeofType:
+    std::cout << "ConvertDeclSpecToType <c3>" << std::endl;
     // FIXME: Preserve type source info.
     Result = S.GetTypeFromParser(DS.getRepAsType());
     assert(!Result.isNull() && "Didn't get a type for typeof?");
@@ -1263,6 +1277,7 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
     break;
   }
   case DeclSpec::TST_decltype: {
+    std::cout << "ConvertDeclSpecToType <c4>" << std::endl;
     Expr *E = DS.getRepAsExpr();
     assert(E && "Didn't get an expression for decltype?");
     // TypeQuals handled by caller.
@@ -1288,6 +1303,7 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
 
 #define TRANSFORM_TYPE_TRAIT_DEF(_, Trait) case DeclSpec::TST_##Trait:
 #include "clang/Basic/TransformTypeTraits.def"
+    std::cout << "ConvertDeclSpecToType <c6>" << std::endl;
     Result = S.GetTypeFromParser(DS.getRepAsType());
     assert(!Result.isNull() && "Didn't get a type for the transformation?");
     Result = S.BuildUnaryTransformType(
@@ -1559,6 +1575,7 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
     Result = S.HLSL().ProcessResourceTypeAttributes(Result);
 
   assert(!Result.isNull() && "This function should not return a null type");
+  std::cout << "ConvertDeclSpecToType <end>" << std::endl;
   return Result;
 }
 
@@ -1802,6 +1819,11 @@ static QualType deduceOpenCLPointeeAddrSpace(Sema &S, QualType PointeeType) {
     PointeeType = S.getASTContext().getAddrSpaceQualType(
         PointeeType, S.getASTContext().getDefaultOpenCLPointeeAddrSpace());
   return PointeeType;
+}
+
+QualType Sema::BuildUniquePointerType(QualType T,
+                                SourceLocation Loc, DeclarationName Entity) {
+  // TODO:TODO:
 }
 
 QualType Sema::BuildPointerType(QualType T,
@@ -2830,6 +2852,7 @@ static void inferARCWriteback(TypeProcessingState &state,
     case DeclaratorChunk::Function:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Pipe:
+    case DeclaratorChunk::UniquePointer:
       return;
     }
   }
@@ -2969,6 +2992,7 @@ static void diagnoseRedundantReturnTypeQualifiers(Sema &S, QualType RetTy,
     case DeclaratorChunk::Function:
     case DeclaratorChunk::BlockPointer:
     case DeclaratorChunk::Reference:
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::Array:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Pipe:
@@ -3112,6 +3136,7 @@ GetTypeSourceInfoForDeclarator(TypeProcessingState &State,
 
 static QualType GetDeclSpecTypeForDeclarator(TypeProcessingState &state,
                                              TypeSourceInfo *&ReturnTypeInfo) {
+  std::cout << "GetDeclSpecTypeForDeclarator <start>" << std::endl;
   Sema &SemaRef = state.getSema();
   Declarator &D = state.getDeclarator();
   QualType T;
@@ -3126,6 +3151,7 @@ static QualType GetDeclSpecTypeForDeclarator(TypeProcessingState &state,
   case UnqualifiedIdKind::IK_Identifier:
   case UnqualifiedIdKind::IK_LiteralOperatorId:
   case UnqualifiedIdKind::IK_TemplateId:
+    std::cout << "GetDeclSpecTypeForDeclarator <a1>" << std::endl;
     T = ConvertDeclSpecToType(state);
 
     if (!D.isInvalidType() && D.getDeclSpec().isTypeSpecOwned()) {
@@ -3171,6 +3197,7 @@ static QualType GetDeclSpecTypeForDeclarator(TypeProcessingState &state,
   DeducedType *Deduced = T->getContainedDeducedType();
   bool DeducedIsTrailingReturnType = false;
   if (Deduced && isa<AutoType>(Deduced) && D.hasTrailingReturnType()) {
+    std::cout << "GetDeclSpecTypeForDeclarator <a2>" << std::endl;
     QualType T = SemaRef.GetTypeFromParser(D.getTrailingReturnType());
     Deduced = T.isNull() ? nullptr : T->getContainedDeducedType();
     DeducedIsTrailingReturnType = true;
@@ -3178,6 +3205,7 @@ static QualType GetDeclSpecTypeForDeclarator(TypeProcessingState &state,
 
   // C++11 [dcl.spec.auto]p5: reject 'auto' if it is not in an allowed context.
   if (Deduced) {
+    std::cout << "GetDeclSpecTypeForDeclarator <a3>" << std::endl;
     AutoType *Auto = dyn_cast<AutoType>(Deduced);
     int Error = -1;
 
@@ -3232,6 +3260,7 @@ static QualType GetDeclSpecTypeForDeclarator(TypeProcessingState &state,
       // We'll deal with inventing template parameters for 'auto' in trailing
       // return types when we pick up the trailing return type when processing
       // the function chunk.
+      std::cout << "GetDeclSpecTypeForDeclarator <b1>" << std::endl;
       if (!DeducedIsTrailingReturnType)
         T = InventTemplateParameter(state, T, nullptr, Auto, *Info).first;
       break;
@@ -3371,6 +3400,7 @@ static QualType GetDeclSpecTypeForDeclarator(TypeProcessingState &state,
       if (auto *TD = TN.getAsTemplateDecl())
         SemaRef.NoteTemplateLocation(*TD);
 
+      std::cout << "GetDeclSpecTypeForDeclarator <a9>" << std::endl;
       T = SemaRef.Context.IntTy;
       D.setInvalidType(true);
     } else if (Auto && D.getContext() != DeclaratorContext::LambdaExpr) {
@@ -3390,9 +3420,11 @@ static QualType GetDeclSpecTypeForDeclarator(TypeProcessingState &state,
         SemaRef.Diag(AutoRange.getBegin(), DiagId) << AutoRange;
     }
   }
+  std::cout << "GetDeclSpecTypeForDeclarator <a4>" << std::endl;
 
   if (SemaRef.getLangOpts().CPlusPlus &&
       OwnedTagDecl && OwnedTagDecl->isCompleteDefinition()) {
+    std::cout << "GetDeclSpecTypeForDeclarator <a5>" << std::endl;
     // Check the contexts where C++ forbids the declaration of a new class
     // or enumeration in a type-specifier-seq.
     unsigned DiagID = 0;
@@ -3457,6 +3489,7 @@ static QualType GetDeclSpecTypeForDeclarator(TypeProcessingState &state,
   }
 
   assert(!T.isNull() && "This function should not return a null type");
+  std::cout << "GetDeclSpecTypeForDeclarator <end>" << std::endl;
   return T;
 }
 
@@ -4255,6 +4288,7 @@ static bool shouldHaveNullability(QualType T) {
 static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
                                                 QualType declSpecType,
                                                 TypeSourceInfo *TInfo) {
+  std::cout << "GetFullTypeForDeclarator <start>" << std::endl;
   // The TypeSourceInfo that this function returns will not be a null type.
   // If there is an error, this function will fill in a dummy type as fallback.
   QualType T = declSpecType;
@@ -4336,6 +4370,8 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
     }
   }
 
+  std::cout << "GetFullTypeForDeclarator <a1>" << std::endl;
+
   // Determine whether we should infer _Nonnull on pointer types.
   std::optional<NullabilityKind> inferNullability;
   bool inferNullabilityCS = false;
@@ -4346,6 +4382,7 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
   bool inAssumeNonNullRegion = false;
   SourceLocation assumeNonNullLoc = S.PP.getPragmaAssumeNonNullLoc();
   if (assumeNonNullLoc.isValid()) {
+    std::cout << "GetFullTypeForDeclarator <a2>" << std::endl;
     inAssumeNonNullRegion = true;
     recordNullabilitySeen(S, assumeNonNullLoc);
   }
@@ -4365,6 +4402,7 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
   auto complainAboutInferringWithinChunk = PointerWrappingDeclaratorKind::None;
 
   if (IsTypedefName) {
+    std::cout << "GetFullTypeForDeclarator <a3>" << std::endl;
     // For typedefs, we do not infer any nullability (the default),
     // and we only complain about missing nullability specifiers on
     // inner pointers.
@@ -4398,6 +4436,7 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
       }
     }
   } else {
+    std::cout << "GetFullTypeForDeclarator <a4>" << std::endl;
     bool isFunctionOrMethod = false;
     switch (auto context = state.getDeclarator().getContext()) {
     case DeclaratorContext::ObjCParameter:
@@ -4505,6 +4544,7 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
     case DeclaratorContext::FunctionalCast:
     case DeclaratorContext::RequiresExpr:
     case DeclaratorContext::Association:
+      std::cout << "GetFullTypeForDeclarator <a5>" << std::endl;
       // Don't infer in these contexts.
       break;
     }
@@ -4533,6 +4573,7 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
       [&](SimplePointerKind pointerKind, SourceLocation pointerLoc,
           SourceLocation pointerEndLoc,
           ParsedAttributesView &attrs, AttributePool &Pool) -> ParsedAttr * {
+    std::cout << "GetFullTypeForDeclarator <a6>" << std::endl;
     // We've seen a pointer.
     if (NumPointersRemaining > 0)
       --NumPointersRemaining;
@@ -4593,12 +4634,16 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
   // If the type itself could have nullability but does not, infer pointer
   // nullability and perform consistency checking.
   if (S.CodeSynthesisContexts.empty()) {
+    std::cout << "GetFullTypeForDeclarator <a7>" << std::endl;
     if (shouldHaveNullability(T) && !T->getNullability()) {
+      std::cout << "GetFullTypeForDeclarator <aa1>" << std::endl;
       if (isVaList(T)) {
+        std::cout << "GetFullTypeForDeclarator <aa2>" << std::endl;
         // Record that we've seen a pointer, but do nothing else.
         if (NumPointersRemaining > 0)
           --NumPointersRemaining;
       } else {
+        std::cout << "GetFullTypeForDeclarator <aa3>" << std::endl;
         SimplePointerKind pointerKind = SimplePointerKind::Pointer;
         if (T->isBlockPointerType())
           pointerKind = SimplePointerKind::BlockPointer;
@@ -4610,6 +4655,7 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
                 D.getDeclSpec().getEndLoc(),
                 D.getMutableDeclSpec().getAttributes(),
                 D.getMutableDeclSpec().getAttributePool())) {
+          std::cout << "GetFullTypeForDeclarator <aa4>" << std::endl;
           T = state.getAttributedType(
               createNullabilityAttr(Context, *attr, *inferNullability), T, T);
         }
@@ -4623,6 +4669,7 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
                                   D.getDeclSpec().getTypeSpecTypeLoc());
     }
   }
+  std::cout << "GetFullTypeForDeclarator <a8>" << std::endl;
 
   bool ExpectNoDerefChunk =
       state.getCurrentAttributes().hasAttribute(ParsedAttr::AT_NoDeref);
@@ -4702,6 +4749,99 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
       if (DeclType.Ptr.TypeQuals)
         T = S.BuildQualifiedType(T, DeclType.Loc, DeclType.Ptr.TypeQuals);
       break;
+    case DeclaratorChunk::UniquePointer: {
+      // TODO:TODO: edit here
+      std::cout << "GetFullTypeForDeclarator <a9>" << std::endl;
+      CXXScopeSpec SS;
+      {
+        IdentifierInfo &stdIdent = Context.Idents.get("std");
+        DeclarationName declName = Context.DeclarationNames.getIdentifier(&stdIdent);
+        LookupResult Found = LookupResult(S, declName, DeclType.Loc,
+            Sema::LookupNameKind::LookupNestedNameSpecifierName);
+        S.LookupName(Found, S.getCurScope());
+        NamedDecl *SD =
+            Found.isSingleResult() ? Found.getRepresentativeDecl() : nullptr;
+        if (NamespaceDecl *Namespace = dyn_cast<NamespaceDecl>(SD)) {
+          std::cout << "GetFullTypeForDeclarator <Casted to Namespace>" << std::endl;
+          SS.Extend(Context, Namespace, DeclType.Loc, DeclType.Loc);
+        }
+      }
+      std::cout << "SS.isValid() : " << SS.isValid() << std::endl;
+      OpaquePtr<TemplateName> tName;
+      {
+        UnqualifiedId TemplateName;
+        TemplateName.setIdentifier(&Context.Idents.get("unique_ptr"), DeclType.Loc);
+        bool MemberOfUnknownSpecialization;
+        if (TemplateNameKind TNK = S.isTemplateName(
+              S.getCurScope(), SS,
+              false, TemplateName, nullptr,
+              false, tName, MemberOfUnknownSpecialization,
+              false)) {
+          std::cout << "GetFullTypeForDeclarator <AMAZING>" << std::endl;
+        } else {
+          std::cout << "GetFullTypeForDeclarator <Realy bad>" << std::endl;
+        }
+      }
+      // contains error in the std::unique_ptr template name
+      //{
+      //  NamedDecl *nDecl = nullptr;
+      //  {
+      //    DeclarationName TName = DeclarationName(&Context.Idents.get("unique_ptr"));
+      //    Sema::AssumedTemplateKind AssumedTemplate;
+      //    bool EnteringContext = false;
+      //    bool Disambiguation = false;
+      //    LookupResult R(S, TName, DeclType.Loc, Sema::LookupOrdinaryName);
+      //    ParsedType nUll = nullptr;
+      //    QualType nUllType = nUll.get();
+      //    S.LookupTemplateName(R, S.getCurScope(), SS, nUllType, EnteringContext,
+      //                          /*RequiredTemplate=*/SourceLocation(),
+      //                          &AssumedTemplate,
+      //                          /*AllowTypoCorrection=*/!Disambiguation);
+      //    nDecl = S.getAsTemplateNameDecl(*R.begin());
+      //  }
+      //  TemplateDecl *TD = cast<TemplateDecl>(nDecl);
+      //  TemplateName Template = TemplateName(TD);
+      //  TemplateNameKind TemplateKind = TNK_Type_template;
+      //  tName = OpaquePtr<TemplateName>::make(Template);
+      //  std::cerr << "dump::::0" << std::endl;
+      //  Template.dump();
+      //}
+      std::cout << "GetFullTypeForDeclarator <" << SS.isValid() << ">" << std::endl;
+      {
+        IdentifierInfo &idInfo = Context.Idents.get("unique_ptr");                                                  // TODO:TODO: put "unique_ptr" inside // FIX:
+        typedef SmallVector<ParsedTemplateArgument, 16> TemplateArgList;
+        TemplateArgList TemplateArgs;
+        // --- fix this
+        std::cerr << "dump::::T.dump():" << std::endl;
+        T.dump();
+        QualType Tn(T.getTypePtr(), 0);
+        std::cerr << "dump::::Tn.dump():" << std::endl;
+        Tn.dump();
+        TypeSourceInfo *TInfoTmp = S.Context.getTrivialTypeSourceInfo(Tn, D.getBeginLoc());;
+        std::cerr << "dump::::TInfoTmp->getType().dump()" << std::endl;
+        TInfoTmp->getType().dump();
+        TypeResult TypeArg = S.CreateParsedType(Tn, TInfoTmp);
+        std::cerr << "dump::::TypeArg.get().get().getTypePtr()->dump() " << TypeArg.get().get()->getTypeClass() << std::endl;
+        // TypeArg.get().get().getTypePtr()->dump();
+        std::cerr << "dump::::2.1" << std::endl;
+        // -- end fix this
+        ParsedTemplateArgument Arg = S.ActOnTemplateTypeArgument(TypeArg);
+        TemplateArgs.push_back(Arg);
+        ASTTemplateArgsPtr TemplateArgsPtr(TemplateArgs);
+        TypeResult Type = S.ActOnTemplateIdType(S.getCurScope(), SS, DeclType.Loc, tName, &idInfo, DeclType.Loc, DeclType.Loc, TemplateArgsPtr, DeclType.Loc, false, false, ImplicitTypenameContext::No);
+        auto &DS = D.getDeclSpec();
+
+        T = S.BuildQualifiedType(Type.get().get(), DeclType.Loc, 0);
+
+        std::cerr << "dump::::3" << std::endl;
+
+        std::cout << "After modification" << std::endl;
+      }
+      //T = S.BuildUniquePointerType(T, DeclType.Loc, Name);
+      if (DeclType.Ptr.TypeQuals)
+        T = S.BuildQualifiedType(T, DeclType.Loc, DeclType.Ptr.TypeQuals);
+      break;
+    }
     case DeclaratorChunk::Reference: {
       // Verify that we're not building a reference to pointer to function with
       // exception specification.
@@ -4798,6 +4938,7 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
       break;
     }
     case DeclaratorChunk::Function: {
+      std::cout << "GetFullTypeForDeclarator <b1>" << std::endl;
       // If the function declarator has a prototype (i.e. it is not () and
       // does not have a K&R-style identifier list), then the arguments are part
       // of the type, otherwise the argument list is ().
@@ -5380,6 +5521,7 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
     }
 
     if (T.isNull()) {
+      std::cout << "GetFullTypeForDeclarator <b2>" << std::endl;
       D.setInvalidType(true);
       T = Context.IntTy;
       AreDeclaratorChunksValid = false;
@@ -5390,12 +5532,15 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
                      S.CUDA().IdentifyTarget(D.getAttributes()));
 
     if (DeclType.Kind != DeclaratorChunk::Paren) {
+      std::cout << "GetFullTypeForDeclarator <b3>" << std::endl;
       if (ExpectNoDerefChunk && !IsNoDerefableChunk(DeclType))
         S.Diag(DeclType.Loc, diag::warn_noderef_on_non_pointer_or_array);
 
       ExpectNoDerefChunk = state.didParseNoDeref();
     }
   }
+
+  std::cout << "GetFullTypeForDeclarator <b4>" << std::endl;
 
   if (ExpectNoDerefChunk)
     S.Diag(state.getDeclarator().getBeginLoc(),
@@ -5438,9 +5583,12 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
     }
   }
 
+  std::cout << "GetFullTypeForDeclarator <b5>" << std::endl;
+
   assert(!T.isNull() && "T must not be null after this point");
 
   if (LangOpts.CPlusPlus && T->isFunctionType()) {
+    std::cout << "GetFullTypeForDeclarator <b6>" << std::endl;
     const FunctionProtoType *FnTy = T->getAs<FunctionProtoType>();
     assert(FnTy && "Why oh why is there not a FunctionProtoType here?");
 
@@ -5588,6 +5736,7 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
   // If there was an ellipsis in the declarator, the declaration declares a
   // parameter pack whose type may be a pack expansion type.
   if (D.hasEllipsis()) {
+    std::cout << "GetFullTypeForDeclarator <b7>" << std::endl;
     // C++0x [dcl.fct]p13:
     //   A declarator-id or abstract-declarator containing an ellipsis shall
     //   only be used in a parameter-declaration. Such a parameter-declaration
@@ -5673,10 +5822,12 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
 
   if (state.didParseHLSLParamMod() && !T->isConstantArrayType())
     T = S.HLSL().getInoutParameterType(T);
+  std::cout << "GetFullTypeForDeclarator <end> : " << T->getTypeClass() << ":" << T->getTypeClassName() << std::endl;
   return GetTypeSourceInfoForDeclarator(state, T, TInfo);
 }
 
 TypeSourceInfo *Sema::GetTypeForDeclarator(Declarator &D) {
+  std::cout << "Sema::GetTypeForDeclarator <start>" << std::endl;
   // Determine the type of the declarator. Not all forms of declarator
   // have a type.
 
@@ -5687,6 +5838,7 @@ TypeSourceInfo *Sema::GetTypeForDeclarator(Declarator &D) {
   if (D.isPrototypeContext() && getLangOpts().ObjCAutoRefCount)
     inferARCWriteback(state, T);
 
+  std::cout << "Sema::GetTypeForDeclarator <end>" << std::endl;
   return GetFullTypeForDeclarator(state, T, ReturnTypeInfo);
 }
 
@@ -6246,6 +6398,7 @@ fillDependentAddressSpaceTypeLoc(DependentAddressSpaceTypeLoc DASTL,
 static TypeSourceInfo *
 GetTypeSourceInfoForDeclarator(TypeProcessingState &State,
                                QualType T, TypeSourceInfo *ReturnTypeInfo) {
+  std::cout << "GetTypeSourceInfoForDeclarator <start>" << std::endl;
   Sema &S = State.getSema();
   Declarator &D = State.getDeclarator();
 
@@ -6254,6 +6407,7 @@ GetTypeSourceInfoForDeclarator(TypeProcessingState &State,
 
   // Handle parameter packs whose type is a pack expansion.
   if (isa<PackExpansionType>(T)) {
+    std::cout << "GetTypeSourceInfoForDeclarator <a1>" << std::endl;
     CurrTL.castAs<PackExpansionTypeLoc>().setEllipsisLoc(D.getEllipsisLoc());
     CurrTL = CurrTL.getNextTypeLoc().getUnqualifiedLoc();
   }
@@ -6316,13 +6470,16 @@ GetTypeSourceInfoForDeclarator(TypeProcessingState &State,
   // If we have different source information for the return type, use
   // that.  This really only applies to C++ conversion functions.
   if (ReturnTypeInfo) {
+    std::cout << "GetTypeSourceInfoForDeclarator <a2>" << std::endl;
     TypeLoc TL = ReturnTypeInfo->getTypeLoc();
     assert(TL.getFullDataSize() == CurrTL.getFullDataSize());
     memcpy(CurrTL.getOpaqueData(), TL.getOpaqueData(), TL.getFullDataSize());
   } else {
+    std::cout << "GetTypeSourceInfoForDeclarator <a3>" << std::endl;
     TypeSpecLocFiller(S, S.Context, State, D.getDeclSpec()).Visit(CurrTL);
   }
 
+  std::cout << "GetTypeSourceInfoForDeclarator <end>" << std::endl;
   return TInfo;
 }
 
@@ -6331,12 +6488,16 @@ ParsedType Sema::CreateParsedType(QualType T, TypeSourceInfo *TInfo) {
   // FIXME: LocInfoTypes are "transient", only needed for passing to/from Parser
   // and Sema during declaration parsing. Try deallocating/caching them when
   // it's appropriate, instead of allocating them and keeping them around.
+  std::cout << "Sema::CreateParsedType <start>" << std::endl;
   LocInfoType *LocT = (LocInfoType *)BumpAlloc.Allocate(sizeof(LocInfoType),
                                                         alignof(LocInfoType));
   new (LocT) LocInfoType(T, TInfo);
   assert(LocT->getTypeClass() != T->getTypeClass() &&
          "LocInfoType's TypeClass conflicts with an existing Type class");
-  return ParsedType::make(QualType(LocT, 0));
+  std::cout << "Sema::CreateParsedType <end>" << std::endl;
+  ParsedType t = ParsedType::make(QualType(LocT, 0));
+  T.dump();
+  return t;
 }
 
 void LocInfoType::getAsStringInternal(std::string &Str,
@@ -6346,7 +6507,9 @@ void LocInfoType::getAsStringInternal(std::string &Str,
          " GetTypeFromParser");
 }
 
+// TODO:TODO: maybe here change the type
 TypeResult Sema::ActOnTypeName(Declarator &D) {
+  std::cout << "Sema::ActOnTypeName <start>" << std::endl;
   // C99 6.7.6: Type names have no identifier.  This is already validated by
   // the parser.
   assert(D.getIdentifier() == nullptr &&
@@ -6376,6 +6539,7 @@ TypeResult Sema::ActOnTypeName(Declarator &D) {
     const AutoType *AT = TL.getTypePtr();
     CheckConstrainedAuto(AT, TL.getConceptNameLoc());
   }
+  std::cout << "Sema::ActOnTypeName <end>" << std::endl;
   return CreateParsedType(T, TInfo);
 }
 
@@ -7484,6 +7648,7 @@ static bool distributeNullabilityTypeAttr(TypeProcessingState &state,
 
     // Don't walk through these.
     case DeclaratorChunk::Reference:
+    case DeclaratorChunk::UniquePointer:
     case DeclaratorChunk::Pipe:
       return false;
     }

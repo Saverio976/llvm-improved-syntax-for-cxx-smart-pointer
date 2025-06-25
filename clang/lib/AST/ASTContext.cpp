@@ -92,6 +92,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <optional>
@@ -3055,8 +3056,11 @@ void ASTContext::setBlockVarCopyInit(const VarDecl*VD, Expr *CopyExpr,
 
 TypeSourceInfo *ASTContext::CreateTypeSourceInfo(QualType T,
                                                  unsigned DataSize) const {
-  if (!DataSize)
+  std::cout << "ASTContext::CreateTypeSourceInfo <start>" << std::endl;
+  if (!DataSize) {
+    std::cout << "ASTContext::CreateTypeSourceInfo <a1>" << std::endl;
     DataSize = TypeLoc::getFullDataSizeForType(T);
+  }
   else
     assert(DataSize == TypeLoc::getFullDataSizeForType(T) &&
            "incorrect data size provided to CreateTypeSourceInfo!");
@@ -3064,6 +3068,7 @@ TypeSourceInfo *ASTContext::CreateTypeSourceInfo(QualType T,
   auto *TInfo =
     (TypeSourceInfo*)BumpAlloc.Allocate(sizeof(TypeSourceInfo) + DataSize, 8);
   new (TInfo) TypeSourceInfo(T, DataSize);
+  std::cout << "ASTContext::CreateTypeSourceInfo <end>" << std::endl;
   return TInfo;
 }
 
@@ -3097,6 +3102,7 @@ static auto getCanonicalTemplateArguments(const ASTContext &C,
 
 QualType
 ASTContext::getExtQualType(const Type *baseType, Qualifiers quals) const {
+  std::cout << "ASTContext::getExtQualType [start]" << std::endl;
   unsigned fastQuals = quals.getFastQualifiers();
   quals.removeFastQualifiers();
 
@@ -3127,6 +3133,7 @@ ASTContext::getExtQualType(const Type *baseType, Qualifiers quals) const {
 
 QualType ASTContext::getAddrSpaceQualType(QualType T,
                                           LangAS AddressSpace) const {
+  std::cout << "ASTContext::getAddrSpaceQualType [start]" << std::endl;
   QualType CanT = getCanonicalType(T);
   if (CanT.getAddressSpace() == AddressSpace)
     return T;
@@ -3559,6 +3566,7 @@ QualType ASTContext::removePtrSizeAddrSpace(QualType T) const {
 QualType ASTContext::getCountAttributedType(
     QualType WrappedTy, Expr *CountExpr, bool CountInBytes, bool OrNull,
     ArrayRef<TypeCoupledDeclRefInfo> DependentDecls) const {
+  std::cout << "ASTContext::getCountAttributedType [start]" << std::endl;
   assert(WrappedTy->isPointerType() || WrappedTy->isArrayType());
 
   llvm::FoldingSetNodeID ID;
@@ -3677,6 +3685,7 @@ void ASTContext::adjustDeducedFunctionResultType(FunctionDecl *FD,
 /// and preserved. Other type sugar (for instance, typedefs) is not.
 QualType ASTContext::getFunctionTypeWithExceptionSpec(
     QualType Orig, const FunctionProtoType::ExceptionSpecInfo &ESI) const {
+  std::cout << "ASTContext::getFunctionTypeWithExceptionSpec [start]" << std::endl;
   return adjustType(Orig, [&](QualType Ty) {
     const auto *Proto = Ty->castAs<FunctionProtoType>();
     return getFunctionType(Proto->getReturnType(), Proto->getParamTypes(),
@@ -3693,6 +3702,7 @@ bool ASTContext::hasSameFunctionTypeIgnoringExceptionSpec(QualType T,
 }
 
 QualType ASTContext::getFunctionTypeWithoutPtrSizes(QualType T) {
+  std::cout << "ASTContext::getFunctionTypeWithoutPtrSizes [start]" << std::endl;
   if (const auto *Proto = T->getAs<FunctionProtoType>()) {
     QualType RetTy = removePtrSizeAddrSpace(Proto->getReturnType());
     SmallVector<QualType, 16> Args(Proto->param_types().size());
@@ -3716,6 +3726,7 @@ bool ASTContext::hasSameFunctionTypeIgnoringPtrSizes(QualType T, QualType U) {
 }
 
 QualType ASTContext::getFunctionTypeWithoutParamABIs(QualType T) const {
+  std::cout << "ASTContext::getFunctionTypeWithoutParamABIs [start]" << std::endl;
   if (const auto *Proto = T->getAs<FunctionProtoType>()) {
     FunctionProtoType::ExtProtoInfo EPI = Proto->getExtProtoInfo();
     EPI.ExtParameterInfos = nullptr;
@@ -3761,6 +3772,7 @@ void ASTContext::adjustExceptionSpec(
 /// getComplexType - Return the uniqued reference to the type for a complex
 /// number with the specified element type.
 QualType ASTContext::getComplexType(QualType T) const {
+  std::cout << "ASTContext::getComplexType [start]" << std::endl;
   // Unique pointers, to guarantee there is only one pointer of a particular
   // structure.
   llvm::FoldingSetNodeID ID;
@@ -3789,6 +3801,7 @@ QualType ASTContext::getComplexType(QualType T) const {
 /// getPointerType - Return the uniqued reference to the type for a pointer to
 /// the specified type.
 QualType ASTContext::getPointerType(QualType T) const {
+  std::cout << "ASTContext::getPointerType [start]" << std::endl;
   // Unique pointers, to guarantee there is only one pointer of a particular
   // structure.
   llvm::FoldingSetNodeID ID;
@@ -3815,6 +3828,7 @@ QualType ASTContext::getPointerType(QualType T) const {
 }
 
 QualType ASTContext::getAdjustedType(QualType Orig, QualType New) const {
+  std::cout << "ASTContext::getAdjustedType [start]" << std::endl;
   llvm::FoldingSetNodeID ID;
   AdjustedType::Profile(ID, Orig, New);
   void *InsertPos = nullptr;
@@ -3836,6 +3850,7 @@ QualType ASTContext::getAdjustedType(QualType Orig, QualType New) const {
 }
 
 QualType ASTContext::getDecayedType(QualType Orig, QualType Decayed) const {
+  std::cout << "ASTContext::getDecayedType0 [start]" << std::endl;
   llvm::FoldingSetNodeID ID;
   AdjustedType::Profile(ID, Orig, Decayed);
   void *InsertPos = nullptr;
@@ -3856,6 +3871,7 @@ QualType ASTContext::getDecayedType(QualType Orig, QualType Decayed) const {
 }
 
 QualType ASTContext::getDecayedType(QualType T) const {
+  std::cout << "ASTContext::getDecayedType1 [start]" << std::endl;
   assert((T->isArrayType() || T->isFunctionType()) && "T does not decay");
 
   QualType Decayed;
@@ -3879,6 +3895,7 @@ QualType ASTContext::getDecayedType(QualType T) const {
 }
 
 QualType ASTContext::getArrayParameterType(QualType Ty) const {
+  std::cout << "ASTContext::getArrayParameterType [start]" << std::endl;
   if (Ty->isArrayParameterType())
     return Ty;
   assert(Ty->isConstantArrayType() && "Ty must be an array type.");
@@ -3913,6 +3930,7 @@ QualType ASTContext::getArrayParameterType(QualType Ty) const {
 /// getBlockPointerType - Return the uniqued reference to the type for
 /// a pointer to the specified block.
 QualType ASTContext::getBlockPointerType(QualType T) const {
+  std::cout << "ASTContext::getBlockPointerType [start]" << std::endl;
   assert(T->isFunctionType() && "block of function types only");
   // Unique pointers, to guarantee there is only one block of a particular
   // structure.
@@ -3986,6 +4004,7 @@ ASTContext::getLValueReferenceType(QualType T, bool SpelledAsLValue) const {
 /// getRValueReferenceType - Return the uniqued reference to the type for an
 /// rvalue reference to the specified type.
 QualType ASTContext::getRValueReferenceType(QualType T) const {
+  std::cout << "ASTContext::getRValueReferenceType [start]" << std::endl;
   assert((!T->isPlaceholderType() ||
           T->isSpecificPlaceholderType(BuiltinType::UnknownAny)) &&
          "Unresolved placeholder type");
@@ -4025,6 +4044,7 @@ QualType ASTContext::getRValueReferenceType(QualType T) const {
 QualType ASTContext::getMemberPointerType(QualType T,
                                           NestedNameSpecifier *Qualifier,
                                           const CXXRecordDecl *Cls) const {
+  std::cout << "ASTContext::getMemberPointerType [start]" << std::endl;
   if (!Qualifier) {
     assert(Cls && "At least one of Qualifier or Cls must be provided");
     Qualifier = NestedNameSpecifier::Create(*this, /*Prefix=*/nullptr,
@@ -4076,6 +4096,7 @@ QualType ASTContext::getConstantArrayType(QualType EltTy,
                                           const Expr *SizeExpr,
                                           ArraySizeModifier ASM,
                                           unsigned IndexTypeQuals) const {
+  std::cout << "ASTContext::getConstantArrayType [start]" << std::endl;
   assert((EltTy->isDependentType() ||
           EltTy->isIncompleteType() || EltTy->isConstantSizeType()) &&
          "Constant array of VLAs is illegal!");
@@ -4126,6 +4147,7 @@ QualType ASTContext::getConstantArrayType(QualType EltTy,
 /// variably-modified, into the corresponding type with all the known
 /// sizes replaced with [*].
 QualType ASTContext::getVariableArrayDecayedType(QualType type) const {
+  std::cout << "ASTContext::getVariableArrayDecayedType [start]" << std::endl;
   // Vastly most common case.
   if (!type->isVariablyModifiedType()) return type;
 
@@ -4268,6 +4290,7 @@ QualType ASTContext::getVariableArrayType(QualType EltTy, Expr *NumElts,
                                           ArraySizeModifier ASM,
                                           unsigned IndexTypeQuals,
                                           SourceRange Brackets) const {
+  std::cout << "ASTContext::getVariableArrayType [start]" << std::endl;
   // Since we don't unique expressions, it isn't possible to unique VLA's
   // that have an expression provided for their size.
   QualType Canon;
@@ -4297,6 +4320,7 @@ QualType ASTContext::getDependentSizedArrayType(QualType elementType,
                                                 ArraySizeModifier ASM,
                                                 unsigned elementTypeQuals,
                                                 SourceRange brackets) const {
+  std::cout << "ASTContext::getDependentSizedArrayType [start]" << std::endl;
   assert((!numElements || numElements->isTypeDependent() ||
           numElements->isValueDependent()) &&
          "Size must be type- or value-dependent!");
@@ -4359,6 +4383,7 @@ QualType ASTContext::getDependentSizedArrayType(QualType elementType,
 QualType ASTContext::getIncompleteArrayType(QualType elementType,
                                             ArraySizeModifier ASM,
                                             unsigned elementTypeQuals) const {
+  std::cout << "ASTContext::getIncompleteArrayType [start]" << std::endl;
   llvm::FoldingSetNodeID ID;
   IncompleteArrayType::Profile(ID, elementType, ASM, elementTypeQuals);
 
@@ -4467,6 +4492,7 @@ QualType ASTContext::getWebAssemblyExternrefType() const {
 /// type.
 QualType ASTContext::getScalableVectorType(QualType EltTy, unsigned NumElts,
                                            unsigned NumFields) const {
+  std::cout << "ASTContext::getScalableVectorType [start]" << std::endl;
   if (Target->hasAArch64SVETypes()) {
     uint64_t EltTySize = getTypeSize(EltTy);
 
@@ -4525,6 +4551,7 @@ QualType ASTContext::getScalableVectorType(QualType EltTy, unsigned NumElts,
 /// the specified element type and size. VectorType must be a built-in type.
 QualType ASTContext::getVectorType(QualType vecType, unsigned NumElts,
                                    VectorKind VecKind) const {
+  std::cout << "ASTContext::getVectorType [start]" << std::endl;
   assert(vecType->isBuiltinType() ||
          (vecType->isBitIntType() &&
           // Only support _BitInt elements with byte-sized power of 2 NumBits.
@@ -4559,6 +4586,7 @@ QualType ASTContext::getVectorType(QualType vecType, unsigned NumElts,
 QualType ASTContext::getDependentVectorType(QualType VecType, Expr *SizeExpr,
                                             SourceLocation AttrLoc,
                                             VectorKind VecKind) const {
+  std::cout << "ASTContext::getDependentVectorType [start]" << std::endl;
   llvm::FoldingSetNodeID ID;
   DependentVectorType::Profile(ID, *this, getCanonicalType(VecType), SizeExpr,
                                VecKind);
@@ -4598,6 +4626,7 @@ QualType ASTContext::getDependentVectorType(QualType VecType, Expr *SizeExpr,
 /// the specified element type and size. VectorType must be a built-in type.
 QualType ASTContext::getExtVectorType(QualType vecType,
                                       unsigned NumElts) const {
+  std::cout << "ASTContext::getExtVectorType [start]" << std::endl;
   assert(vecType->isBuiltinType() || vecType->isDependentType() ||
          (vecType->isBitIntType() &&
           // Only support _BitInt elements with byte-sized power of 2 NumBits.
@@ -4672,6 +4701,7 @@ ASTContext::getDependentSizedExtVectorType(QualType vecType,
 
 QualType ASTContext::getConstantMatrixType(QualType ElementTy, unsigned NumRows,
                                            unsigned NumColumns) const {
+  std::cout << "ASTContext::getConstantMatrixType [start]" << std::endl;
   llvm::FoldingSetNodeID ID;
   ConstantMatrixType::Profile(ID, ElementTy, NumRows, NumColumns,
                               Type::ConstantMatrix);
@@ -4706,6 +4736,7 @@ QualType ASTContext::getDependentSizedMatrixType(QualType ElementTy,
                                                  Expr *RowExpr,
                                                  Expr *ColumnExpr,
                                                  SourceLocation AttrLoc) const {
+  std::cout << "ASTContext::getDependentSizedMatrixType [start]" << std::endl;
   QualType CanonElementTy = getCanonicalType(ElementTy);
   llvm::FoldingSetNodeID ID;
   DependentSizedMatrixType::Profile(ID, *this, CanonElementTy, RowExpr,
@@ -4746,6 +4777,7 @@ QualType ASTContext::getDependentSizedMatrixType(QualType ElementTy,
 QualType ASTContext::getDependentAddressSpaceType(QualType PointeeType,
                                                   Expr *AddrSpaceExpr,
                                                   SourceLocation AttrLoc) const {
+  std::cout << "ASTContext::getDependentAddressSpaceType [start]" << std::endl;
   assert(AddrSpaceExpr->isInstantiationDependent());
 
   QualType canonPointeeType = getCanonicalType(PointeeType);
@@ -4875,6 +4907,7 @@ static bool isCanonicalExceptionSpecification(
 QualType ASTContext::getFunctionTypeInternal(
     QualType ResultTy, ArrayRef<QualType> ArgArray,
     const FunctionProtoType::ExtProtoInfo &EPI, bool OnlyWantCanonical) const {
+  std::cout << "ASTContext::getFunctionTypeInternal [start]" << std::endl;
   size_t NumArgs = ArgArray.size();
 
   // Unique functions, to guarantee there is only one function of a particular
@@ -5018,6 +5051,7 @@ QualType ASTContext::getFunctionTypeInternal(
 }
 
 QualType ASTContext::getPipeType(QualType T, bool ReadOnly) const {
+  std::cout << "ASTContext::getPipeType [start]" << std::endl;
   llvm::FoldingSetNodeID ID;
   PipeType::Profile(ID, T, ReadOnly);
 
@@ -5057,6 +5091,7 @@ QualType ASTContext::getWritePipeType(QualType T) const {
 }
 
 QualType ASTContext::getBitIntType(bool IsUnsigned, unsigned NumBits) const {
+  std::cout << "ASTContext::getBitIntType [start]" << std::endl;
   llvm::FoldingSetNodeID ID;
   BitIntType::Profile(ID, IsUnsigned, NumBits);
 
@@ -5072,6 +5107,7 @@ QualType ASTContext::getBitIntType(bool IsUnsigned, unsigned NumBits) const {
 
 QualType ASTContext::getDependentBitIntType(bool IsUnsigned,
                                             Expr *NumBitsExpr) const {
+  std::cout << "ASTContext::getDependentBitIntType [start]" << std::endl;
   assert(NumBitsExpr->isInstantiationDependent() && "Only good for dependent");
   llvm::FoldingSetNodeID ID;
   DependentBitIntType::Profile(ID, *this, IsUnsigned, NumBitsExpr);
@@ -5106,6 +5142,7 @@ static bool NeedsInjectedClassNameType(const RecordDecl *D) {
 /// injected class name type for the specified templated declaration.
 QualType ASTContext::getInjectedClassNameType(CXXRecordDecl *Decl,
                                               QualType TST) const {
+  std::cout << "ASTContext::getInjectedClassNameType [start]" << std::endl;
   assert(NeedsInjectedClassNameType(Decl));
   if (Decl->TypeForDecl) {
     assert(isa<InjectedClassNameType>(Decl->TypeForDecl));
@@ -5125,6 +5162,7 @@ QualType ASTContext::getInjectedClassNameType(CXXRecordDecl *Decl,
 /// getTypeDeclType - Return the unique reference to the type for the
 /// specified type declaration.
 QualType ASTContext::getTypeDeclTypeSlow(const TypeDecl *Decl) const {
+  std::cout << "ASTContext::getTypeDeclTypeSlow [start]" << std::endl;
   assert(Decl && "Passed null for Decl param");
   assert(!Decl->TypeForDecl && "TypeForDecl present in slow case");
 
@@ -5213,6 +5251,7 @@ QualType ASTContext::getUsingType(const UsingShadowDecl *Found,
 }
 
 QualType ASTContext::getRecordType(const RecordDecl *Decl) const {
+  std::cout << "ASTContext::getRecordType [start]" << std::endl;
   if (Decl->TypeForDecl) return QualType(Decl->TypeForDecl, 0);
 
   if (const RecordDecl *PrevDecl = Decl->getPreviousDecl())
@@ -5445,6 +5484,7 @@ QualType ASTContext::getSubstTemplateTypeParmType(QualType Replacement,
                                                   unsigned Index,
                                                   UnsignedOrNone PackIndex,
                                                   bool Final) const {
+  std::cout << "ASTContext::getSubstTemplateTypeParmType [start]" << std::endl;
   llvm::FoldingSetNodeID ID;
   SubstTemplateTypeParmType::Profile(ID, Replacement, AssociatedDecl, Index,
                                      PackIndex, Final);
@@ -5510,6 +5550,7 @@ ASTContext::getSubstTemplateTypeParmPackType(Decl *AssociatedDecl,
 QualType ASTContext::getTemplateTypeParmType(unsigned Depth, unsigned Index,
                                              bool ParameterPack,
                                              TemplateTypeParmDecl *TTPDecl) const {
+  std::cout << "ASTContext::getTemplateTypeParmType [start]" << std::endl;
   llvm::FoldingSetNodeID ID;
   TemplateTypeParmType::Profile(ID, Depth, Index, ParameterPack, TTPDecl);
   void *InsertPos = nullptr;
@@ -5623,6 +5664,7 @@ ASTContext::getTemplateSpecializationType(TemplateName Template,
 
 QualType ASTContext::getCanonicalTemplateSpecializationType(
     TemplateName Template, ArrayRef<TemplateArgument> Args) const {
+  std::cout << "ASTContext::getCanonicalTemplateSpecializationType [start]" << std::endl;
   assert(!Template.getAsDependentTemplateName() &&
          "No dependent template names here!");
 
@@ -5668,6 +5710,7 @@ QualType ASTContext::getElaboratedType(ElaboratedTypeKeyword Keyword,
                                        NestedNameSpecifier *NNS,
                                        QualType NamedType,
                                        TagDecl *OwnedTagDecl) const {
+  std::cout << "ASTContext::getElaboratedType [start]" << std::endl;
   llvm::FoldingSetNodeID ID;
   ElaboratedType::Profile(ID, Keyword, NNS, NamedType, OwnedTagDecl);
 
@@ -5734,6 +5777,7 @@ ASTContext::getMacroQualifiedType(QualType UnderlyingTy,
 QualType ASTContext::getDependentNameType(ElaboratedTypeKeyword Keyword,
                                           NestedNameSpecifier *NNS,
                                           const IdentifierInfo *Name) const {
+  std::cout << "ASTContext::getDependentNameType [start]" << std::endl;
   llvm::FoldingSetNodeID ID;
   DependentNameType::Profile(ID, Keyword, NNS, Name);
 
@@ -5762,6 +5806,7 @@ QualType ASTContext::getDependentNameType(ElaboratedTypeKeyword Keyword,
 QualType ASTContext::getDependentTemplateSpecializationType(
     ElaboratedTypeKeyword Keyword, const DependentTemplateStorage &Name,
     ArrayRef<TemplateArgumentLoc> Args) const {
+  std::cout << "ASTContext::getDependentTemplateSpecializationType0 [start]" << std::endl;
   // TODO: avoid this copy
   SmallVector<TemplateArgument, 16> ArgCopy;
   for (unsigned I = 0, E = Args.size(); I != E; ++I)
@@ -5772,6 +5817,7 @@ QualType ASTContext::getDependentTemplateSpecializationType(
 QualType ASTContext::getDependentTemplateSpecializationType(
     ElaboratedTypeKeyword Keyword, const DependentTemplateStorage &Name,
     ArrayRef<TemplateArgument> Args, bool IsCanonical) const {
+  std::cout << "ASTContext::getDependentTemplateSpecializationType1 [start]" << std::endl;
   llvm::FoldingSetNodeID ID;
   DependentTemplateSpecializationType::Profile(ID, *this, Keyword, Name, Args);
 
@@ -5875,6 +5921,7 @@ TemplateArgument ASTContext::getInjectedTemplateArg(NamedDecl *Param) const {
 QualType ASTContext::getPackExpansionType(QualType Pattern,
                                           UnsignedOrNone NumExpansions,
                                           bool ExpectPackInType) const {
+  std::cout << "ASTContext::getPackExpansionType [start]" << std::endl;
   assert((!ExpectPackInType || Pattern->containsUnexpandedParameterPack()) &&
          "Pack expansions must expand one or more parameter packs");
 
@@ -6265,6 +6312,7 @@ QualType ASTContext::getObjCInterfaceType(const ObjCInterfaceDecl *Decl,
 /// DeclRefExpr's. This doesn't effect the type checker, since it operates
 /// on canonical type's (which are always unique).
 QualType ASTContext::getTypeOfExprType(Expr *tofExpr, TypeOfKind Kind) const {
+  std::cout << "ASTContext::getTypeOfExprType [start]" << std::endl;
   TypeOfExprType *toe;
   if (tofExpr->isTypeDependent()) {
     llvm::FoldingSetNodeID ID;
@@ -6301,6 +6349,7 @@ QualType ASTContext::getTypeOfExprType(Expr *tofExpr, TypeOfKind Kind) const {
 /// an issue. This doesn't affect the type checker, since it operates
 /// on canonical types (which are always unique).
 QualType ASTContext::getTypeOfType(QualType tofType, TypeOfKind Kind) const {
+  std::cout << "ASTContext::getTypeOfType [start]" << std::endl;
   QualType Canonical = getCanonicalType(tofType);
   auto *tot = new (*this, alignof(TypeOfType))
       TypeOfType(*this, tofType, Canonical, Kind);
@@ -6312,6 +6361,7 @@ QualType ASTContext::getTypeOfType(QualType tofType, TypeOfKind Kind) const {
 /// that expression, as in [dcl.type.simple]p4 but without taking id-expressions
 /// and class member access into account.
 QualType ASTContext::getReferenceQualifiedType(const Expr *E) const {
+  std::cout << "ASTContext::getReferenceQualifiedType [start]" << std::endl;
   // C++11 [dcl.type.simple]p4:
   //   [...]
   QualType T = E->getType();
@@ -6336,6 +6386,7 @@ QualType ASTContext::getReferenceQualifiedType(const Expr *E) const {
 /// expression, and would not give a significant memory saving, since there
 /// is an Expr tree under each such type.
 QualType ASTContext::getDecltypeType(Expr *e, QualType UnderlyingType) const {
+  std::cout << "ASTContext::getDecltypeType [start]" << std::endl;
   DecltypeType *dt;
 
   // C++11 [temp.type]p2:
@@ -6369,6 +6420,7 @@ QualType ASTContext::getPackIndexingType(QualType Pattern, Expr *IndexExpr,
                                          bool FullySubstituted,
                                          ArrayRef<QualType> Expansions,
                                          UnsignedOrNone Index) const {
+  std::cout << "ASTContext::getPackIndexingType [start]" << std::endl;
   QualType Canonical;
   if (FullySubstituted && Index) {
     Canonical = getCanonicalType(Expansions[*Index]);
@@ -6406,6 +6458,7 @@ QualType ASTContext::getUnaryTransformType(QualType BaseType,
                                            QualType UnderlyingType,
                                            UnaryTransformType::UTTKind Kind)
     const {
+  std::cout << "ASTContext::getUnaryTransformType [start]" << std::endl;
   UnaryTransformType *ut = nullptr;
 
   if (BaseType->isDependentType()) {
@@ -6438,6 +6491,7 @@ QualType ASTContext::getAutoTypeInternal(
     QualType DeducedType, AutoTypeKeyword Keyword, bool IsDependent,
     bool IsPack, ConceptDecl *TypeConstraintConcept,
     ArrayRef<TemplateArgument> TypeConstraintArgs, bool IsCanon) const {
+  std::cout << "ASTContext::getAutoTypeInternal [start]" << std::endl;
   if (DeducedType.isNull() && Keyword == AutoTypeKeyword::Auto &&
       !TypeConstraintConcept && !IsDependent)
     return getAutoDeductType();
@@ -6504,6 +6558,7 @@ ASTContext::getAutoType(QualType DeducedType, AutoTypeKeyword Keyword,
 }
 
 QualType ASTContext::getUnconstrainedType(QualType T) const {
+  std::cout << "ASTContext::getUnconstrainedType [start]" << std::endl;
   QualType CanonT = T.getNonPackExpansionType().getCanonicalType();
 
   // Remove a type-constraint from a top-level auto or decltype(auto).
@@ -6527,6 +6582,7 @@ QualType ASTContext::getUnconstrainedType(QualType T) const {
 QualType ASTContext::getDeducedTemplateSpecializationTypeInternal(
     TemplateName Template, QualType DeducedType, bool IsDependent,
     QualType Canon) const {
+  std::cout << "ASTContext::getDeducedTemplateSpecializationTypeInternal [start]" << std::endl;
   // Look in the folding set for an existing type.
   void *InsertPos = nullptr;
   llvm::FoldingSetNodeID ID;
@@ -6564,6 +6620,7 @@ QualType ASTContext::getDeducedTemplateSpecializationType(
 /// getAtomicType - Return the uniqued reference to the atomic type for
 /// the given value type.
 QualType ASTContext::getAtomicType(QualType T) const {
+  std::cout << "ASTContext::getAtomicType [start]" << std::endl;
   // Unique pointers, to guarantee there is only one pointer of a particular
   // structure.
   llvm::FoldingSetNodeID ID;
@@ -6591,6 +6648,7 @@ QualType ASTContext::getAtomicType(QualType T) const {
 
 /// getAutoDeductType - Get type pattern for deducing against 'auto'.
 QualType ASTContext::getAutoDeductType() const {
+  std::cout << "ASTContext::getAutoDeductType [start]" << std::endl;
   if (AutoDeductTy.isNull())
     AutoDeductTy = QualType(new (*this, alignof(AutoType))
                                 AutoType(QualType(), AutoTypeKeyword::Auto,
@@ -6611,6 +6669,7 @@ QualType ASTContext::getAutoRRefDeductType() const {
 /// getTagDeclType - Return the unique reference to the type for the
 /// specified TagDecl (struct/union/class/enum) decl.
 QualType ASTContext::getTagDeclType(const TagDecl *Decl) const {
+  std::cout << "ASTContext::getTagDeclType [start]" << std::endl;
   assert(Decl);
   // FIXME: What is the design on getTagDeclType when it requires casting
   // away const?  mutable?
@@ -6686,6 +6745,7 @@ QualType ASTContext::getProcessIDType() const {
 //===----------------------------------------------------------------------===//
 
 CanQualType ASTContext::getCanonicalParamType(QualType T) const {
+  std::cout << "ASTContext::getCanonicalParamType [start]" << std::endl;
   // Push qualifiers into arrays, and then discard any remaining
   // qualifiers.
   T = getCanonicalType(T);
@@ -6707,6 +6767,7 @@ CanQualType ASTContext::getCanonicalParamType(QualType T) const {
 
 QualType ASTContext::getUnqualifiedArrayType(QualType type,
                                              Qualifiers &quals) const {
+  std::cout << "ASTContext::getUnqualifiedArrayType [start]" << std::endl;
   SplitQualType splitType = type.getSplitUnqualifiedType();
 
   // FIXME: getSplitUnqualifiedType() actually walks all the way to
@@ -7717,6 +7778,7 @@ const ArrayType *ASTContext::getAsArrayType(QualType T) const {
 }
 
 QualType ASTContext::getAdjustedParameterType(QualType T) const {
+  std::cout << "ASTContext::getAdjustedParameterType [start]" << std::endl;
   if (getLangOpts().HLSL && T->isConstantArrayType())
     return getArrayParameterType(T);
   if (T->isArrayType() || T->isFunctionType())
@@ -7725,12 +7787,14 @@ QualType ASTContext::getAdjustedParameterType(QualType T) const {
 }
 
 QualType ASTContext::getSignatureParameterType(QualType T) const {
+  std::cout << "ASTContext::getSignatureParameterType [start]" << std::endl;
   T = getVariableArrayDecayedType(T);
   T = getAdjustedParameterType(T);
   return T.getUnqualifiedType();
 }
 
 QualType ASTContext::getExceptionObjectType(QualType T) const {
+  std::cout << "ASTContext::getExceptionObjectType [start]" << std::endl;
   // C++ [except.throw]p3:
   //   A throw-expression initializes a temporary object, called the exception
   //   object, the type of which is determined by removing any top-level
@@ -7750,6 +7814,7 @@ QualType ASTContext::getExceptionObjectType(QualType T) const {
 ///
 /// See C99 6.7.5.3p7 and C99 6.3.2.1p3.
 QualType ASTContext::getArrayDecayedType(QualType Ty) const {
+  std::cout << "ASTContext::getArrayDecayedType [start]" << std::endl;
   // Get the element type with 'getAsArrayType' so that we don't lose any
   // typedefs in the element type of the array.  This also handles propagation
   // of type qualifiers from the array type into the element type if present
@@ -7772,10 +7837,12 @@ QualType ASTContext::getArrayDecayedType(QualType Ty) const {
 }
 
 QualType ASTContext::getBaseElementType(const ArrayType *array) const {
+  std::cout << "ASTContext::getBaseElementType0 [start]" << std::endl;
   return getBaseElementType(array->getElementType());
 }
 
 QualType ASTContext::getBaseElementType(QualType type) const {
+  std::cout << "ASTContext::getBaseElementType1 [start]" << std::endl;
   Qualifiers qs;
   while (true) {
     SplitQualType split = type.getSplitDesugaredType();
@@ -7978,6 +8045,7 @@ QualType ASTContext::isPromotableBitField(Expr *E) const {
 /// promote to: C99 6.3.1.1p2, assuming that Promotable is a promotable
 /// integer type.
 QualType ASTContext::getPromotedIntegerType(QualType Promotable) const {
+  std::cout << "ASTContext::getPromotedIntegerType [start]" << std::endl;
   assert(!Promotable.isNull());
   assert(isPromotableIntegerType(Promotable));
   if (const auto *ET = Promotable->getAs<EnumType>())
@@ -8185,6 +8253,7 @@ RecordDecl *ASTContext::getCFConstantStringTagDecl() const {
 
 // getCFConstantStringType - Return the type used for constant CFStrings.
 QualType ASTContext::getCFConstantStringType() const {
+  std::cout << "ASTContext::getCFConstantStringType [start]" << std::endl;
   return getTypedefType(getCFConstantStringDecl());
 }
 
@@ -8206,6 +8275,7 @@ void ASTContext::setCFConstantStringType(QualType T) {
 }
 
 QualType ASTContext::getBlockDescriptorType() const {
+  std::cout << "ASTContext::getBlockDescriptorType [start]" << std::endl;
   if (BlockDescriptorType)
     return getTagDeclType(BlockDescriptorType);
 
@@ -8241,6 +8311,7 @@ QualType ASTContext::getBlockDescriptorType() const {
 }
 
 QualType ASTContext::getBlockDescriptorExtendedType() const {
+  std::cout << "ASTContext::getBlockDescriptorExtendedType [start]" << std::endl;
   if (BlockDescriptorExtendedType)
     return getTagDeclType(BlockDescriptorExtendedType);
 
@@ -8385,6 +8456,7 @@ bool ASTContext::getByrefLifetime(QualType Ty,
 }
 
 CanQualType ASTContext::getNSUIntegerType() const {
+  std::cout << "ASTContext::getNSUIntegerType [start]" << std::endl;
   assert(Target && "Expected target to be initialized");
   const llvm::Triple &T = Target->getTriple();
   // Windows is LLP64 rather than LP64
@@ -8394,6 +8466,7 @@ CanQualType ASTContext::getNSUIntegerType() const {
 }
 
 CanQualType ASTContext::getNSIntegerType() const {
+  std::cout << "ASTContext::getNSIntegerType [start]" << std::endl;
   assert(Target && "Expected target to be initialized");
   const llvm::Triple &T = Target->getTriple();
   // Windows is LLP64 rather than LP64
@@ -10166,6 +10239,7 @@ ASTContext::getDeducedTemplateName(TemplateName Underlying,
 /// TargetInfo, produce the corresponding type. The unsigned @p Type
 /// is actually a value of type @c TargetInfo::IntType.
 CanQualType ASTContext::getFromTargetType(unsigned Type) const {
+  std::cout << "ASTContext::getFromTargetType [start]" << std::endl;
   switch (Type) {
   case TargetInfo::NoInt: return {};
   case TargetInfo::SignedChar: return SignedCharTy;
@@ -11922,6 +11996,7 @@ unsigned ASTContext::getIntWidth(QualType T) const {
 }
 
 QualType ASTContext::getCorrespondingUnsignedType(QualType T) const {
+  std::cout << "ASTContext::getCorrespondingUnsignedType [start]" << std::endl;
   assert((T->hasIntegerRepresentation() || T->isEnumeralType() ||
           T->isFixedPointType()) &&
          "Unexpected type");
@@ -11996,6 +12071,7 @@ QualType ASTContext::getCorrespondingUnsignedType(QualType T) const {
 }
 
 QualType ASTContext::getCorrespondingSignedType(QualType T) const {
+  std::cout << "ASTContext::getCorrespondingSignedType [start]" << std::endl;
   assert((T->hasIntegerRepresentation() || T->isEnumeralType() ||
           T->isFixedPointType()) &&
          "Unexpected type");
@@ -13010,6 +13086,7 @@ size_t ASTContext::getSideTableAllocatedMemory() const {
 /// Returns empty type if there is no appropriate target types.
 QualType ASTContext::getIntTypeForBitwidth(unsigned DestWidth,
                                            unsigned Signed) const {
+  std::cout << "ASTContext::getIntTypeForBitwidth [start]" << std::endl;
   TargetInfo::IntType Ty = getTargetInfo().getIntTypeByWidth(DestWidth, Signed);
   CanQualType QualTy = getFromTargetType(Ty);
   if (!QualTy && DestWidth == 128)
@@ -13022,6 +13099,7 @@ QualType ASTContext::getIntTypeForBitwidth(unsigned DestWidth,
 /// Returns empty type if there is no appropriate target types.
 QualType ASTContext::getRealTypeForBitwidth(unsigned DestWidth,
                                             FloatModeKind ExplicitType) const {
+  std::cout << "ASTContext::getRealTypeForBitwidth [start]" << std::endl;
   FloatModeKind Ty =
       getTargetInfo().getRealTypeByWidth(DestWidth, ExplicitType);
   switch (Ty) {
@@ -13153,6 +13231,7 @@ unsigned ASTContext::getParameterIndex(const ParmVarDecl *D) const {
 
 QualType ASTContext::getStringLiteralArrayType(QualType EltTy,
                                                unsigned Length) const {
+  std::cout << "ASTContext::getStringLiteralArrayType [start]" << std::endl;
   // A C++ string literal has a const-qualified element type (C++ 2.13.4p1).
   if (getLangOpts().CPlusPlus || getLangOpts().ConstStrings)
     EltTy = EltTy.withConst();
@@ -14330,6 +14409,7 @@ static auto unwrapSugar(SplitQualType &T, Qualifiers &QTotal) {
 
 QualType ASTContext::getCommonSugaredType(QualType X, QualType Y,
                                           bool Unqualified) {
+  std::cout << "ASTContext::getCommonSugaredType [start]" << std::endl;
   assert(Unqualified ? hasSameUnqualifiedType(X, Y) : hasSameType(X, Y));
   if (X == Y)
     return X;
@@ -14408,6 +14488,7 @@ QualType ASTContext::getCommonSugaredType(QualType X, QualType Y,
 }
 
 QualType ASTContext::getCorrespondingUnsaturatedType(QualType Ty) const {
+  std::cout << "ASTContext::getCorrespondingUnsaturatedType [start]" << std::endl;
   assert(Ty->isFixedPointType());
 
   if (Ty->isUnsaturatedFixedPointType())
@@ -14444,6 +14525,7 @@ QualType ASTContext::getCorrespondingUnsaturatedType(QualType Ty) const {
 }
 
 QualType ASTContext::getCorrespondingSaturatedType(QualType Ty) const {
+  std::cout << "ASTContext::getCorrespondingSaturatedType [start]" << std::endl;
   assert(Ty->isFixedPointType());
 
   if (Ty->isSaturatedFixedPointType()) return Ty;
@@ -14611,6 +14693,7 @@ llvm::APFixedPoint ASTContext::getFixedPointMin(QualType Ty) const {
 }
 
 QualType ASTContext::getCorrespondingSignedFixedPointType(QualType Ty) const {
+  std::cout << "ASTContext::getCorrespondingSignedFixedPointType [start]" << std::endl;
   assert(Ty->isUnsignedFixedPointType() &&
          "Expected unsigned fixed point type");
 

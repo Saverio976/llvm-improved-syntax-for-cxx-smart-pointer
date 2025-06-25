@@ -35,7 +35,9 @@
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringSwitch.h"
+#include <iostream>
 #include <optional>
+#include <ostream>
 
 using namespace clang;
 
@@ -51,6 +53,7 @@ using namespace clang;
 TypeResult Parser::ParseTypeName(SourceRange *Range, DeclaratorContext Context,
                                  AccessSpecifier AS, Decl **OwnedType,
                                  ParsedAttributes *Attrs) {
+  std::cout << "Parser::ParseTypeName <start>" << std::endl;
   DeclSpecContext DSC = getDeclSpecContextFromDeclaratorContext(Context);
   if (DSC == DeclSpecContext::DSC_normal)
     DSC = DeclSpecContext::DSC_type_specifier;
@@ -84,6 +87,7 @@ TypeResult Parser::ParseTypeName(SourceRange *Range, DeclaratorContext Context,
   if (DeclaratorInfo.isInvalidType())
     return true;
 
+  std::cout << "Parser::ParseTypeName <end>" << std::endl;
   return Actions.ActOnTypeName(DeclaratorInfo);
 }
 
@@ -449,8 +453,10 @@ void Parser::ParseAttributeWithTypeArg(IdentifierInfo &AttrName,
   Parens.consumeOpen();
 
   TypeResult T;
-  if (Tok.isNot(tok::r_paren))
+  if (Tok.isNot(tok::r_paren)) {
+    std::cout << "call to parse type name a2" << std::endl;
     T = ParseTypeName();
+  }
 
   if (Parens.consumeClose())
     return;
@@ -595,6 +601,7 @@ unsigned Parser::ParseAttributeArgsCommon(
 
     if (AttributeIsTypeArgAttr) {
       // FIXME: Multiple type arguments are not implemented.
+      std::cout << "call to parse type name a1" << std::endl;
       TypeResult T = ParseTypeName();
       if (T.isInvalid()) {
         SkipUntil(tok::r_paren, StopAtSemi);
@@ -1829,6 +1836,7 @@ void Parser::ParseTypeTagForDatatypeAttribute(
   }
 
   SourceRange MatchingCTypeRange;
+  std::cout << "call to parse type name a3" << std::endl;
   TypeResult MatchingCType = ParseTypeName(&MatchingCTypeRange);
   if (MatchingCType.isInvalid()) {
     T.skipToEnd();
@@ -2325,6 +2333,7 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
                                               ParsedTemplateInfo &TemplateInfo,
                                               SourceLocation *DeclEnd,
                                               ForRangeInit *FRI) {
+  std::cout << "Parser::ParseDeclGroup <start>" << std::endl;
   // Parse the first declarator.
   // Consume all of the attributes from `Attrs` by moving them to our own local
   // list. This ensures that we will not attempt to interpret them as statement
@@ -2340,6 +2349,7 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
        TemplateInfo.Kind == ParsedTemplateInfo::ExplicitSpecialization);
   SuppressAccessChecks SAC(*this, IsTemplateSpecOrInst);
 
+  std::cout << "Parser::ParseDeclGroup <a1>" << std::endl;
   ParseDeclarator(D);
 
   if (IsTemplateSpecOrInst)
@@ -2363,6 +2373,7 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
   // These will be parsed in ParseFunctionDefinition or ParseLexedAttrList.
   LateParsedAttrList LateParsedAttrs(true);
   if (D.isFunctionDeclarator()) {
+    std::cout << "Parser::ParseDeclGroup <a2>" << std::endl;
     MaybeParseGNUAttributes(D, &LateParsedAttrs);
 
     // The _Noreturn keyword can't appear here, unlike the GNU noreturn
@@ -2389,6 +2400,7 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
     if (Tok.is(tok::equal) && NextToken().is(tok::code_completion)) {
       cutOffParsing();
       Actions.CodeCompletion().CodeCompleteAfterFunctionEquals(D);
+      std::cout << "Parser::ParseDeclGroup <a2.1>" << std::endl;
       return nullptr;
     }
     // We're at the point where the parsing of function declarator is finished.
@@ -2461,6 +2473,7 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
                 ParseFunctionDefinition(D, TemplateInfo, &LateParsedAttrs);
           }
 
+          std::cout << "Parser::ParseDeclGroup <a2.2>" << std::endl;
           return Actions.ConvertDeclToDeclGroup(TheDecl);
         }
 
@@ -2477,17 +2490,21 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
         } else {
           Diag(Tok, diag::err_expected_fn_body);
           SkipUntil(tok::semi);
+          std::cout << "Parser::ParseDeclGroup <a2.3>" << std::endl;
           return nullptr;
         }
       } else {
         if (Tok.is(tok::l_brace)) {
           Diag(Tok, diag::err_function_definition_not_allowed);
           SkipMalformedDecl();
+          std::cout << "Parser::ParseDeclGroup <a2.4>" << std::endl;
           return nullptr;
         }
       }
     }
   }
+
+  std::cout << "Parser::ParseDeclGroup <a3>" << std::endl;
 
   if (ParseAsmAttributesAfterDeclarator(D))
     return nullptr;
@@ -2499,6 +2516,7 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
   // Handle the Objective-C for-in loop variable similarly, although we
   // don't need to parse the container in advance.
   if (FRI && (Tok.is(tok::colon) || isTokIdentifier_in())) {
+    std::cout << "Parser::ParseDeclGroup <a4>" << std::endl;
     bool IsForRangeLoop = false;
     if (TryConsumeToken(tok::colon, FRI->ColonLoc)) {
       IsForRangeLoop = true;
@@ -2546,6 +2564,8 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
     return Actions.FinalizeDeclaratorGroup(getCurScope(), DS, ThisDecl);
   }
 
+  std::cout << "Parser::ParseDeclGroup <a5>" << std::endl;
+
   SmallVector<Decl *, 8> DeclsInGroup;
   Decl *FirstDecl =
       ParseDeclarationAfterDeclaratorAndAttributes(D, TemplateInfo, FRI);
@@ -2561,6 +2581,7 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
   // error, bail out.
   SourceLocation CommaLoc;
   while (TryConsumeToken(tok::comma, CommaLoc)) {
+    std::cout << "Parser::ParseDeclGroup <a6>" << std::endl;
     if (Tok.isAtStartOfLine() && ExpectSemi && !MightBeDeclarator(Context)) {
       // This comma was followed by a line-break and something which can't be
       // the start of a declarator. The comma was probably a typo for a
@@ -2598,6 +2619,7 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
     if (getLangOpts().MicrosoftExt)
       DiagnoseAndSkipExtendedMicrosoftTypeAttributes();
 
+    std::cout << "bb5" << std::endl;
     ParseDeclarator(D);
 
     if (getLangOpts().HLSL)
@@ -2616,6 +2638,7 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
         DeclsInGroup.push_back(ThisDecl);
     }
   }
+  std::cout << "Parser::ParseDeclGroup <a7>" << std::endl;
 
   if (DeclEnd)
     *DeclEnd = Tok.getLocation();
@@ -2630,6 +2653,8 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
     if (!isDeclarationSpecifier(ImplicitTypenameContext::No))
       SkipMalformedDecl();
   }
+
+  std::cout << "Parser::ParseDeclGroup <end>" << std::endl;
 
   return Actions.FinalizeDeclaratorGroup(getCurScope(), DS, DeclsInGroup);
 }
@@ -2951,6 +2976,7 @@ void Parser::ParseSpecifierQualifierList(
     DeclSpec &DS, ImplicitTypenameContext AllowImplicitTypename,
     AccessSpecifier AS, DeclSpecContext DSC) {
   ParsedTemplateInfo TemplateInfo;
+  std::cout << "Parser::ParseSpecifierQualifierList <start>" << std::endl;
   /// specifier-qualifier-list is a subset of declaration-specifiers.  Just
   /// parse declaration-specifiers and complain about extra stuff.
   /// TODO: diagnose attribute-specifiers and alignment-specifiers.
@@ -2997,6 +3023,7 @@ void Parser::ParseSpecifierQualifierList(
         << static_cast<int>(DS.getConstexprSpecifier());
     DS.ClearConstexprSpec();
   }
+  std::cout << "Parser::ParseSpecifierQualifierList <end>" << std::endl;
 }
 
 /// isValidAfterIdentifierInDeclaratorAfterDeclSpec - Return true if the
@@ -3249,6 +3276,7 @@ bool Parser::ParseImplicitInt(DeclSpec &DS, CXXScopeSpec *SS,
   if (IsTemplateName) {
     SourceLocation LAngle, RAngle;
     TemplateArgList Args;
+    std::cout << "call to ParseTemplateIdAfterTemplateName <a1>" << std::endl;
     ParseTemplateIdAfterTemplateName(true, LAngle, Args, RAngle);
   }
 
@@ -3324,6 +3352,7 @@ ExprResult Parser::ParseAlignArgument(StringRef KWName, SourceLocation Start,
   ExprResult ER;
   if (isTypeIdInParens()) {
     SourceLocation TypeLoc = Tok.getLocation();
+    std::cout << "call to parse type name a4" << std::endl;
     ParsedType Ty = ParseTypeName().get();
     SourceRange TypeRange(Start, Tok.getLocation());
     if (Actions.ActOnAlignasTypeArgument(KWName, Ty, TypeLoc, TypeRange))
@@ -3611,6 +3640,7 @@ void Parser::ParseDeclarationSpecifiers(
     DeclSpec &DS, ParsedTemplateInfo &TemplateInfo, AccessSpecifier AS,
     DeclSpecContext DSContext, LateParsedAttrList *LateAttrs,
     ImplicitTypenameContext AllowImplicitTypename) {
+  std::cout << "Parser::ParseDeclarationSpecifiers <start>" << std::endl;
   if (DS.getSourceRange().isInvalid()) {
     // Start the range at the current token but make the end of the range
     // invalid.  This will make the entire range invalid unless we successfully
@@ -3678,10 +3708,15 @@ void Parser::ParseDeclarationSpecifiers(
 
     switch (Tok.getKind()) {
     default:
-      if (Tok.isRegularKeywordAttribute())
+      std::cout << "Parser::ParseDeclarationSpecifiers default <start>" << std::endl;
+      if (Tok.isRegularKeywordAttribute()) {
+        std::cout << "Parser::ParseDeclarationSpecifiers default <a1>" << std::endl;
         goto Attribute;
+      }
+      std::cout << "Parser::ParseDeclarationSpecifiers default <end>" << std::endl;
 
     DoneWithDeclSpec:
+      std::cout << "Parser::ParseDeclarationSpecifiers DoneWithDeclSpec <start>" << std::endl;
       if (!AttrsLastTime)
         ProhibitAttributes(attrs);
       else {
@@ -3723,8 +3758,74 @@ void Parser::ParseDeclarationSpecifiers(
 
       // If this is not a declaration specifier token, we're done reading decl
       // specifiers.  First verify that DeclSpec's are consistent.
+      std::cout << "Parser::ParseDeclarationSpecifiers DoneWithDeclSpec <end>" << std::endl;
       DS.Finish(Actions, Policy);
+      std::cout << "Parser::ParseDeclarationSpecifiers <end-1>" << std::endl;
       return;
+
+    //case tok::percent: {
+    //  // do nothing
+    //  break;
+    //  // TODO:TODO: modif
+    //  std::cout << "Parser::ParseDeclarationSpecifiers <PERCENT !!!>" << std::endl;
+    //  CXXScopeSpec SS;
+    //  {
+    //    IdentifierInfo &stdIdent = Actions.Context.Idents.get("std");
+    //    DeclarationName declName = Actions.Context.DeclarationNames.getIdentifier(&stdIdent);
+    //    LookupResult Found = LookupResult(Actions, declName, Loc,
+    //        Sema::LookupNameKind::LookupNestedNameSpecifierName);
+    //    Actions.LookupName(Found, Actions.getCurScope());
+    //    NamedDecl *SD =
+    //        Found.isSingleResult() ? Found.getRepresentativeDecl() : nullptr;
+    //    if (NamespaceDecl *Namespace = dyn_cast<NamespaceDecl>(SD)) {
+    //      std::cout << "Parser::ParseDeclarationSpecifiers <Casted to Namespace>" << std::endl;
+    //      SS.Extend(Actions.Context, Namespace, Loc, Loc);
+    //    }
+    //  }
+    //  OpaquePtr<TemplateName> tName;
+    //  {
+    //    UnqualifiedId TemplateName;
+    //    TemplateName.setIdentifier(&Actions.Context.Idents.get("unique_ptr"), Loc);
+    //    bool MemberOfUnknownSpecialization;
+    //    if (TemplateNameKind TNK = Actions.isTemplateName(
+    //          Actions.getCurScope(), SS,
+    //          false, TemplateName, nullptr,
+    //          false, tName, MemberOfUnknownSpecialization,
+    //          false)) {
+    //      std::cout << "Parser::ParseDeclarationSpecifiers <AMAZING>" << std::endl;
+    //    } else {
+    //      std::cout << "Parser::ParseDeclarationSpecifiers <Realy bad>" << std::endl;
+    //    }
+    //  }
+    //  QualType TRes;
+    //  {
+    //    IdentifierInfo &idInfo = Actions.Context.Idents.get("unique_ptr");                                                  // TODO:TODO: put "unique_ptr" inside // FIX:
+    //    typedef SmallVector<ParsedTemplateArgument, 16> TemplateArgList;
+    //    TemplateArgList TemplateArgs;
+    //    // --- fix this
+    //    QualType T = DS.getRepAsType().get();
+    //    QualType Tn(T.getTypePtr(), 0);
+    //    TypeSourceInfo *TInfoTmp = Actions.Context.getTrivialTypeSourceInfo(Tn, Loc);;
+    //    TypeResult TypeArg = Actions.CreateParsedType(Tn, TInfoTmp);
+    //    // -- end fix this
+    //    ParsedTemplateArgument Arg = Actions.ActOnTemplateTypeArgument(TypeArg);
+    //    TemplateArgs.push_back(Arg);
+    //    ASTTemplateArgsPtr TemplateArgsPtr(TemplateArgs);
+    //    TypeResult Type = Actions.ActOnTemplateIdType(Actions.getCurScope(), SS, Loc, tName, &idInfo, Loc, Loc, TemplateArgsPtr, Loc, false, false, ImplicitTypenameContext::No);
+
+    //    isInvalid = DS.SetTypeSpecType(DeclSpec::TST_typename,
+    //                                  Tok.getEndLoc(),
+    //                                  PrevSpec, DiagID, Type, Policy);
+    //    if (isInvalid)
+    //      break;
+    //    DS.SetRangeEnd(Tok.getAnnotationEndLoc());
+
+    //    std::cerr << "dump::::3" << std::endl;
+
+    //    std::cout << "After modification" << std::endl;
+    //  }
+    //  break;
+    //}
 
     // alignment-specifier
     case tok::kw__Alignas:
@@ -3747,6 +3848,7 @@ void Parser::ParseDeclarationSpecifiers(
         goto DoneWithDeclSpec;
 
     Attribute:
+      std::cout << "Parser::ParseDeclarationSpecifiers Attribute <start>" << std::endl;
       ProhibitAttributes(attrs);
       // FIXME: It would be good to recover by accepting the attributes,
       //        but attempting to do that now would cause serious
@@ -3756,6 +3858,7 @@ void Parser::ParseDeclarationSpecifiers(
 
       ParseCXX11Attributes(attrs);
       AttrsLastTime = true;
+      std::cout << "Parser::ParseDeclarationSpecifiers Attribute <end>" << std::endl;
       continue;
 
     case tok::code_completion: {
@@ -3796,30 +3899,42 @@ void Parser::ParseDeclarationSpecifiers(
     }
 
     case tok::coloncolon: // ::foo::bar
+      std::cout << "Parser::ParseDeclarationSpecifiers tok::coloncolon <start>" << std::endl;
       // C++ scope specifier.  Annotate and loop, or bail out on error.
       if (getLangOpts().CPlusPlus &&
           TryAnnotateCXXScopeToken(EnteringContext)) {
         if (!DS.hasTypeSpecifier())
           DS.SetTypeSpecError();
+        std::cout << "Parser::ParseDeclarationSpecifiers tok::coloncolon <a5>" << std::endl;
         goto DoneWithDeclSpec;
       }
-      if (Tok.is(tok::coloncolon)) // ::new or ::delete
+      if (Tok.is(tok::coloncolon)) { // ::new or ::delete
+        std::cout << "Parser::ParseDeclarationSpecifiers tok::coloncolon <a6>" << std::endl;
         goto DoneWithDeclSpec;
+      }
+      std::cout << "Parser::ParseDeclarationSpecifiers tok::coloncolon <end>" << std::endl;
       continue;
 
     case tok::annot_cxxscope: {
-      if (DS.hasTypeSpecifier() || DS.isTypeAltiVecVector())
+      std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_cxxscope <start>" << std::endl;
+      if (DS.hasTypeSpecifier() || DS.isTypeAltiVecVector()) {
+        std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_cxxscope <a1>" << std::endl;
         goto DoneWithDeclSpec;
+      }
 
       CXXScopeSpec SS;
-      if (TemplateInfo.TemplateParams)
+      if (TemplateInfo.TemplateParams) {
+        std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_cxxscope <a2>" << std::endl;
         SS.setTemplateParamLists(*TemplateInfo.TemplateParams);
+      }
       Actions.RestoreNestedNameSpecifierAnnotation(Tok.getAnnotationValue(),
                                                    Tok.getAnnotationRange(),
                                                    SS);
 
       // We are looking for a qualified typename.
       Token Next = NextToken();
+
+      std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_cxxscope <a3>" << std::endl;
 
       TemplateIdAnnotation *TemplateId = Next.is(tok::annot_template_id)
                                              ? takeTemplateIdAnnotation(Next)
@@ -3833,6 +3948,8 @@ void Parser::ParseDeclarationSpecifiers(
       }
 
       if (TemplateId && TemplateId->Kind == TNK_Type_template) {
+        std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_cxxscope <a4>" << std::endl;
+        // TODO:TODO
         // We have a qualified template-id, e.g., N::A<int>
 
         // If this would be a valid constructor declaration with template
@@ -3860,11 +3977,13 @@ void Parser::ParseDeclarationSpecifiers(
         ConsumeAnnotationToken(); // The C++ scope.
         assert(Tok.is(tok::annot_template_id) &&
                "ParseOptionalCXXScopeSpecifier not working");
+        std::cout << "call to AnnotateTemplateIdTokenAsType <a1>" << std::endl;
         AnnotateTemplateIdTokenAsType(SS, AllowImplicitTypename);
         continue;
       }
 
       if (TemplateId && TemplateId->Kind == TNK_Concept_template) {
+        std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_cxxscope <a5>" << std::endl;
         DS.getTypeSpecScope() = SS;
         // This is probably a qualified placeholder-specifier, e.g., ::C<int>
         // auto ... Consume the scope annotation and continue to consume the
@@ -3875,6 +3994,7 @@ void Parser::ParseDeclarationSpecifiers(
       }
 
       if (Next.is(tok::annot_typename)) {
+        std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_cxxscope <a6>" << std::endl;
         DS.getTypeSpecScope() = SS;
         ConsumeAnnotationToken(); // The C++ scope.
         TypeResult T = getTypeAnnotation(Tok);
@@ -3891,14 +4011,18 @@ void Parser::ParseDeclarationSpecifiers(
           Next.is(tok::annot_template_id) &&
           static_cast<TemplateIdAnnotation *>(Next.getAnnotationValue())
                   ->Kind == TNK_Dependent_template_name) {
+        std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_cxxscope <a7>" << std::endl;
         DS.getTypeSpecScope() = SS;
         ConsumeAnnotationToken(); // The C++ scope.
+        std::cout << "call to AnnotateTemplateIdTokenAsType <a2>" << std::endl;
         AnnotateTemplateIdTokenAsType(SS, AllowImplicitTypename);
         continue;
       }
 
-      if (Next.isNot(tok::identifier))
+      if (Next.isNot(tok::identifier)) {
+        std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_cxxscope <a8>" << std::endl;
         goto DoneWithDeclSpec;
+      }
 
       // Check whether this is a constructor declaration. If we're in a
       // context where the identifier could be a class name, and it has the
@@ -3910,8 +4034,10 @@ void Parser::ParseDeclarationSpecifiers(
           isConstructorDeclarator(/*Unqualified=*/false,
                                   /*DeductionGuide=*/false,
                                   DS.isFriendSpecified(),
-                                  &TemplateInfo))
+                                  &TemplateInfo)) {
+        std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_cxxscope <a9>" << std::endl;
         goto DoneWithDeclSpec;
+      }
 
       // C++20 [temp.spec] 13.9/6.
       // This disables the access checking rules for function template explicit
@@ -3919,6 +4045,7 @@ void Parser::ParseDeclarationSpecifiers(
       // - `return type`.
       SuppressAccessChecks SAC(*this, IsTemplateSpecOrInst);
 
+      std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_cxxscope <b1>" << std::endl;
       ParsedType TypeRep = Actions.getTypeName(
           *Next.getIdentifierInfo(), Next.getLocation(), getCurScope(), &SS,
           false, false, nullptr,
@@ -3949,8 +4076,11 @@ void Parser::ParseDeclarationSpecifiers(
           }
           continue;
         }
+        std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_cxxscope <b2>" << std::endl;
         goto DoneWithDeclSpec;
       }
+
+      std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_cxxscope <b3>" << std::endl;
 
       DS.getTypeSpecScope() = SS;
       ConsumeAnnotationToken(); // The C++ scope.
@@ -3963,24 +4093,31 @@ void Parser::ParseDeclarationSpecifiers(
       DS.SetRangeEnd(Tok.getLocation());
       ConsumeToken(); // The typename.
 
+      std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_cxxscope <end>" << std::endl;
       continue;
     }
 
     case tok::annot_typename: {
+      std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_typename <start>" << std::endl;
       // If we've previously seen a tag definition, we were almost surely
       // missing a semicolon after it.
-      if (DS.hasTypeSpecifier() && DS.hasTagDefinition())
+      if (DS.hasTypeSpecifier() && DS.hasTagDefinition()) {
+        std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_typename <a1>" << std::endl;
         goto DoneWithDeclSpec;
+      }
 
       TypeResult T = getTypeAnnotation(Tok);
       isInvalid = DS.SetTypeSpecType(DeclSpec::TST_typename, Loc, PrevSpec,
                                      DiagID, T, Policy);
+
+      std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_typename <a2>" << std::endl;
+
       if (isInvalid)
         break;
 
       DS.SetRangeEnd(Tok.getAnnotationEndLoc());
       ConsumeAnnotationToken(); // The typename
-
+      std::cout << "Parser::ParseDeclarationSpecifiers tok::annot_typename <end> [ " <<  T.get().get().getAsString() << std::endl;
       continue;
     }
 
@@ -4005,11 +4142,14 @@ void Parser::ParseDeclarationSpecifiers(
     case tok::kw_decltype:
     case tok::identifier:
     ParseIdentifier: {
+      std::cout << "ik12" << std::endl;
       // This identifier can only be a typedef name if we haven't already seen
       // a type-specifier.  Without this check we misparse:
       //  typedef int X; struct Y { short X; };  as 'short int'.
       if (DS.hasTypeSpecifier())
         goto DoneWithDeclSpec;
+
+      std::cout << "ik12.a1" << std::endl;
 
       // If the token is an identifier named "__declspec" and Microsoft
       // extensions are not enabled, it is likely that there will be cascading
@@ -4036,9 +4176,12 @@ void Parser::ParseDeclarationSpecifiers(
         }
       }
 
+      std::cout << "ik12.a" << std::endl;
+
       // In C++, check to see if this is a scope specifier like foo::bar::, if
       // so handle it as such.  This is important for ctor parsing.
       if (getLangOpts().CPlusPlus) {
+        std::cout << "ik12.1" << std::endl;
         // C++20 [temp.spec] 13.9/6.
         // This disables the access checking rules for function template
         // explicit instantiation and explicit specialization:
@@ -4060,6 +4203,7 @@ void Parser::ParseDeclarationSpecifiers(
         if (!Tok.is(tok::identifier))
           continue;
       }
+      std::cout << "ik12.3" << std::endl;
 
       // Check for need to substitute AltiVec keyword tokens.
       if (TryAltiVecToken(DS, Loc, PrevSpec, DiagID, isInvalid))
@@ -4083,6 +4227,7 @@ void Parser::ParseDeclarationSpecifiers(
         ConsumeToken();
         continue;
       }
+      std::cout << "ik12.2" << std::endl;
 
       // If we're in a context where the identifier could be a class name,
       // check whether this is a constructor declaration.
@@ -4093,6 +4238,7 @@ void Parser::ParseDeclarationSpecifiers(
                                   DS.isFriendSpecified()))
         goto DoneWithDeclSpec;
 
+      std::cout << "ik13" << std::endl;
       ParsedType TypeRep = Actions.getTypeName(
           *Tok.getIdentifierInfo(), Tok.getLocation(), getCurScope(), nullptr,
           false, false, nullptr, false, false,
@@ -4157,6 +4303,7 @@ void Parser::ParseDeclarationSpecifiers(
 
       // type-name or placeholder-specifier
     case tok::annot_template_id: {
+      std::cout << "ik14" << std::endl;
       TemplateIdAnnotation *TemplateId = takeTemplateIdAnnotation(Tok);
 
       if (TemplateId->hasInvalidName()) {
@@ -4243,7 +4390,9 @@ void Parser::ParseDeclarationSpecifiers(
       // Turn the template-id annotation token into a type annotation
       // token, then try again to parse it as a type-specifier.
       CXXScopeSpec SS;
+      std::cout << "call to AnnotateTemplateIdTokenAsType <a3>" << std::endl;
       AnnotateTemplateIdTokenAsType(SS, AllowImplicitTypename);
+      std::cout << "ik15" << std::endl;
       continue;
     }
 
@@ -4739,6 +4888,7 @@ void Parser::ParseDeclarationSpecifiers(
 
     // C++ typename-specifier:
     case tok::kw_typename:
+      std::cout << "ik16" << std::endl;
       if (TryAnnotateTypeOrScopeToken()) {
         DS.SetTypeSpecError();
         goto DoneWithDeclSpec;
@@ -4846,6 +4996,7 @@ void Parser::ParseDeclarationSpecifiers(
 #include "clang/Basic/HLSLIntangibleTypes.def"
 
     case tok::less:
+      std::cout << "ik17" << std::endl;
       // GCC ObjC supports types like "<SomeProtocol>" as a synonym for
       // "id<SomeProtocol>".  This is hopelessly old fashioned and dangerous,
       // but we support it.
@@ -4897,6 +5048,7 @@ void Parser::ParseDeclarationSpecifiers(
 
     AttrsLastTime = false;
   }
+  std::cout << "Parser::ParseDeclarationSpecifiers <end>" << std::endl;
 }
 
 static void DiagnoseCountAttributedTypeInUnnamedAnon(ParsingDeclSpec &DS,
@@ -5008,6 +5160,7 @@ void Parser::ParseStructDeclaration(
     if (Tok.isNot(tok::colon)) {
       // Don't parse FOO:BAR as if it were a typo for FOO::BAR.
       ColonProtectionRAIIObject X(*this);
+      std::cout << "bb6" << std::endl;
       ParseDeclarator(DeclaratorInfo.D);
     } else
       DeclaratorInfo.D.SetIdentifier(nullptr, Tok.getLocation());
@@ -5448,6 +5601,7 @@ void Parser::ParseEnumSpecifier(SourceLocation StartLoc, DeclSpec &DS,
                                   DeclSpecContext::DSC_type_specifier);
       Declarator DeclaratorInfo(DS, ParsedAttributesView::none(),
                                 DeclaratorContext::TypeName);
+      std::cout << "-- IK14 --" << std::endl;
       BaseType = Actions.ActOnTypeName(DeclaratorInfo);
 
       BaseRange = SourceRange(ColonLoc, DeclaratorInfo.getSourceRange().getEnd());
@@ -6627,9 +6781,11 @@ void Parser::ParseTypeQualifierListOpt(
 void Parser::ParseDeclarator(Declarator &D) {
   /// This implements the 'declarator' production in the C grammar, then checks
   /// for well-formedness and issues diagnostics.
+  std::cout << "Parser::ParseDeclarator <start>" << std::endl;
   Actions.runWithSufficientStackSpace(D.getBeginLoc(), [&] {
     ParseDeclaratorInternal(D, &Parser::ParseDirectDeclarator);
   });
+  std::cout << "Parser::ParseDeclarator <end>" << std::endl;
 }
 
 static bool isPtrOperatorToken(tok::TokenKind Kind, const LangOptions &Lang,
@@ -6701,6 +6857,7 @@ static bool isPipeDeclarator(const Declarator &D) {
 ///         '::'[opt] nested-name-specifier '*' cv-qualifier-seq[opt]
 void Parser::ParseDeclaratorInternal(Declarator &D,
                                      DirectDeclParseFunction DirectDeclParser) {
+  std::cout << "Parser::ParseDeclaratorInternal <start>" << std::endl;
   if (Diags.hasAllExtensionsSilenced())
     D.setExtension();
 
@@ -6778,6 +6935,8 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
 
   tok::TokenKind Kind = Tok.getKind();
 
+  std::cout << "Parser::ParseDeclaratorInternal <a4>" << std::endl;
+
   if (D.getDeclSpec().isTypeSpecPipe() && !isPipeDeclarator(D)) {
     DeclSpec DS(AttrFactory);
     ParseTypeQualifierListOpt(DS);
@@ -6791,15 +6950,17 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
   if (!isPtrOperatorToken(Kind, getLangOpts(), D.getContext())) {
     if (DirectDeclParser)
       (this->*DirectDeclParser)(D);
+    std::cout << "Parser::ParseDeclaratorInternal <end>" << std::endl;
     return;
   }
 
   // Otherwise, '*' -> pointer, '^' -> block, '&' -> lvalue reference,
-  // '&&' -> rvalue reference
-  SourceLocation Loc = ConsumeToken();  // Eat the *, ^, & or &&.
+  // '&&' -> rvalue reference, '%' -> unique pointer
+  SourceLocation Loc = ConsumeToken();  // Eat the *, ^, &, && or %.
   D.SetRangeEnd(Loc);
 
   if (Kind == tok::star || Kind == tok::caret || Kind == tok::percent) {
+    std::cout << "di6" << std::endl;
     // Is a pointer.
     DeclSpec DS(AttrFactory);
 
@@ -6813,6 +6974,7 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
     D.ExtendWithDeclSpec(DS);
 
     // Recursively parse the declarator.
+    std::cout << "aa2" << std::endl;
     Actions.runWithSufficientStackSpace(
         D.getBeginLoc(), [&] { ParseDeclaratorInternal(D, DirectDeclParser); });
     if (Kind == tok::star)
@@ -6822,19 +6984,76 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
                         DS.getVolatileSpecLoc(), DS.getRestrictSpecLoc(),
                         DS.getAtomicSpecLoc(), DS.getUnalignedSpecLoc()),
                     std::move(DS.getAttributes()), SourceLocation());
-    else if (Kind == tok::percent)
+    else if (Kind == tok::percent) {
+      // TODO:TODO: change type to something
       // Remember that we parsed a unique pointer type, and remember the type-quals.
-      D.AddTypeInfo(DeclaratorChunk::getUniquePointer(
-                        DS.getTypeQualifiers(), Loc, DS.getConstSpecLoc(),
-                        DS.getVolatileSpecLoc(), DS.getRestrictSpecLoc(),
-                        DS.getAtomicSpecLoc(), DS.getUnalignedSpecLoc()),
-                    std::move(DS.getAttributes()), SourceLocation());
-    else
+      auto &DSs = D.getMutableDeclSpec();
+
+      CXXScopeSpec SS;
+      {
+        IdentifierInfo &stdIdent = Actions.Context.Idents.get("std");
+        DeclarationName declName = Actions.Context.DeclarationNames.getIdentifier(&stdIdent);
+        LookupResult Found = LookupResult(Actions, declName, Loc,
+            Sema::LookupNameKind::LookupNestedNameSpecifierName);
+        Actions.LookupName(Found, Actions.getCurScope());
+        NamedDecl *SD =
+            Found.isSingleResult() ? Found.getRepresentativeDecl() : nullptr;
+        if (NamespaceDecl *Namespace = dyn_cast<NamespaceDecl>(SD)) {
+          std::cout << "Parser::ParseDeclarationSpecifiers <Casted to Namespace>" << std::endl;
+          SS.Extend(Actions.Context, Namespace, Loc, Loc);
+        }
+      }
+      OpaquePtr<TemplateName> tName;
+      {
+        UnqualifiedId TemplateName;
+        TemplateName.setIdentifier(&Actions.Context.Idents.get("unique_ptr"), Loc);
+        bool MemberOfUnknownSpecialization;
+        if (TemplateNameKind TNK = Actions.isTemplateName(
+              Actions.getCurScope(), SS,
+              false, TemplateName, nullptr,
+              false, tName, MemberOfUnknownSpecialization,
+              false)) {
+          std::cout << "Parser::ParseDeclarationSpecifiers <AMAZING>" << std::endl;
+        } else {
+          std::cout << "Parser::ParseDeclarationSpecifiers <Realy bad>" << std::endl;
+        }
+      }
+      QualType TRes;
+      {
+        IdentifierInfo &idInfo = Actions.Context.Idents.get("unique_ptr");                                                  // TODO:TODO: put "unique_ptr" inside // FIX:
+        typedef SmallVector<ParsedTemplateArgument, 16> TemplateArgList;
+        TemplateArgList TemplateArgs;
+        // --- fix this
+        QualType T = D.getDeclSpec().getRepAsType().get();
+        QualType Tn(T.getTypePtr(), 0);
+        TypeSourceInfo *TInfoTmp = Actions.Context.getTrivialTypeSourceInfo(Tn, Loc);;
+        TypeResult TypeArg = Actions.CreateParsedType(Tn, TInfoTmp);
+        // -- end fix this
+        ParsedTemplateArgument Arg = Actions.ActOnTemplateTypeArgument(TypeArg);
+        TemplateArgs.push_back(Arg);
+        ASTTemplateArgsPtr TemplateArgsPtr(TemplateArgs);
+        TypeResult Type = Actions.ActOnTemplateIdType(Actions.getCurScope(), SS, Loc, tName, &idInfo, Loc, Loc, TemplateArgsPtr, Loc, false, false, ImplicitTypenameContext::No);
+
+        unsigned int DiagID;
+        const char *PrevSpec = nullptr;
+        DSs.SetTypeSpecType(DeclSpec::TST_typename,
+                                      Tok.getEndLoc(),
+                                       PrevSpec, DiagID, Type, Actions.getASTContext().getPrintingPolicy());
+      }
+
+      //D.AddTypeInfo(DeclaratorChunk::getUniquePointer(
+      //                  DS.getTypeQualifiers(), Loc, DS.getConstSpecLoc(),
+      //                  DS.getVolatileSpecLoc(), DS.getRestrictSpecLoc(),
+      //                  DS.getAtomicSpecLoc(), DS.getUnalignedSpecLoc()),
+      //              std::move(DS.getAttributes()), SourceLocation());
+      //std::cout << "We parse a unique pointer syntax" << std::endl;
+    } else
       // Remember that we parsed a Block type, and remember the type-quals.
       D.AddTypeInfo(
           DeclaratorChunk::getBlockPointer(DS.getTypeQualifiers(), Loc),
           std::move(DS.getAttributes()), SourceLocation());
   } else {
+    std::cout << "di7" << std::endl;
     // Is a reference
     DeclSpec DS(AttrFactory);
 
@@ -6865,6 +7084,7 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
              diag::err_invalid_reference_qualifier_application) << "_Atomic";
     }
 
+    std::cout << "aa3" << std::endl;
     // Recursively parse the declarator.
     Actions.runWithSufficientStackSpace(
         D.getBeginLoc(), [&] { ParseDeclaratorInternal(D, DirectDeclParser); });
@@ -6885,12 +7105,14 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
         // declarator: reference collapsing will take care of it.
       }
     }
+    std::cout << "di8" << std::endl;
 
     // Remember that we parsed a reference type.
     D.AddTypeInfo(DeclaratorChunk::getReference(DS.getTypeQualifiers(), Loc,
                                                 Kind == tok::amp),
                   std::move(DS.getAttributes()), SourceLocation());
   }
+  std::cout << "di9" << std::endl;
 }
 
 // When correcting from misplaced brackets before the identifier, the location
@@ -6954,12 +7176,16 @@ static SourceLocation getMissingDeclaratorIdLoc(Declarator &D,
 /// in isConstructorDeclarator.
 void Parser::ParseDirectDeclarator(Declarator &D) {
   DeclaratorScopeObj DeclScopeObj(*this, D.getCXXScopeSpec());
+  std::cout << "Parser::ParseDirectDeclarator <start>" << std::endl;
 
   if (getLangOpts().CPlusPlus && D.mayHaveIdentifier()) {
+    std::cout << "Parser::ParseDirectDeclarator <aa1>" << std::endl;
     // This might be a C++17 structured binding.
     if (Tok.is(tok::l_square) && !D.mayOmitIdentifier() &&
-        D.getCXXScopeSpec().isEmpty())
+        D.getCXXScopeSpec().isEmpty()) {
+      std::cout << "Parser::ParseDirectDeclarator <aa2>" << std::endl;
       return ParseDecompositionDeclarator(D);
+    }
 
     // Don't parse FOO:BAR as if it were a typo for FOO::BAR inside a class, in
     // this context it is a bitfield. Also in range-based for statement colon
@@ -6971,6 +7197,7 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
 
     // ParseDeclaratorInternal might already have parsed the scope.
     if (D.getCXXScopeSpec().isEmpty()) {
+      std::cout << "Parser::ParseDirectDeclarator <aa3>" << std::endl;
       bool EnteringContext = D.getContext() == DeclaratorContext::File ||
                              D.getContext() == DeclaratorContext::Member;
       ParseOptionalCXXScopeSpecifier(
@@ -6990,6 +7217,7 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
     // FIXME: We should not be doing this for friend declarations; they have
     // their own special lookup semantics specified by [basic.lookup.unqual]p6.
     if (D.getCXXScopeSpec().isValid()) {
+      std::cout << "Parser::ParseDirectDeclarator <aa4>" << std::endl;
       if (Actions.ShouldEnterDeclaratorScope(getCurScope(),
                                              D.getCXXScopeSpec()))
         // Change the declaration context for name lookup, until this function
@@ -7019,6 +7247,7 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
           NextToken().is(tok::r_paren) && !D.hasGroupingParens() &&
           !Actions.containsUnexpandedParameterPacks(D) &&
           D.getDeclSpec().getTypeSpecType() != TST_auto)) {
+      std::cout << "Parser::ParseDirectDeclarator <aa5>" << std::endl;
       SourceLocation EllipsisLoc = ConsumeToken();
       if (isPtrOperatorToken(Tok.getKind(), getLangOpts(), D.getContext())) {
         // The ellipsis was put in the wrong place. Recover, and explain to
@@ -7037,18 +7266,22 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
 
     if (Tok.isOneOf(tok::identifier, tok::kw_operator, tok::annot_template_id,
                     tok::tilde)) {
+      std::cout << "Parser::ParseDirectDeclarator <aa6>" << std::endl;
       // We found something that indicates the start of an unqualified-id.
       // Parse that unqualified-id.
       bool AllowConstructorName;
       bool AllowDeductionGuide;
       if (D.getDeclSpec().hasTypeSpecifier()) {
+        std::cout << "Parser::ParseDirectDeclarator <aa-a6>" << std::endl;
         AllowConstructorName = false;
         AllowDeductionGuide = false;
       } else if (D.getCXXScopeSpec().isSet()) {
+        std::cout << "Parser::ParseDirectDeclarator <aa-a7>" << std::endl;
         AllowConstructorName = (D.getContext() == DeclaratorContext::File ||
                                 D.getContext() == DeclaratorContext::Member);
         AllowDeductionGuide = false;
       } else {
+        std::cout << "Parser::ParseDirectDeclarator <aa-a8>" << std::endl;
         AllowConstructorName = (D.getContext() == DeclaratorContext::Member);
         AllowDeductionGuide = (D.getContext() == DeclaratorContext::File ||
                                D.getContext() == DeclaratorContext::Member);
@@ -7066,6 +7299,7 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
           // Once we're past the identifier, if the scope was bad, mark the
           // whole declarator bad.
           D.getCXXScopeSpec().isInvalid()) {
+        std::cout << "Parser::ParseDirectDeclarator <aa7>" << std::endl;
         D.SetIdentifier(nullptr, Tok.getLocation());
         D.setInvalidType(true);
       } else {
@@ -7081,6 +7315,7 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
           D.SetRangeBegin(D.getName().getSourceRange().getBegin());
         D.SetRangeEnd(D.getName().getSourceRange().getEnd());
       }
+      std::cout << "Parser::ParseDirectDeclarator <aa8>" << std::endl;
       goto PastIdentifier;
     }
 
@@ -7093,6 +7328,7 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
       goto PastIdentifier;
     }
   } else if (Tok.is(tok::identifier) && D.mayHaveIdentifier()) {
+    std::cout << "Parser::ParseDirectDeclarator <aa9>" << std::endl;
     assert(!getLangOpts().CPlusPlus &&
            "There's a C++-specific check for tok::identifier above");
     assert(Tok.getIdentifierInfo() && "Not an identifier?");
@@ -7101,6 +7337,7 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
     ConsumeToken();
     goto PastIdentifier;
   } else if (Tok.is(tok::identifier) && !D.mayHaveIdentifier()) {
+    std::cout << "Parser::ParseDirectDeclarator <ab1>" << std::endl;
     // We're not allowed an identifier here, but we got one. Try to figure out
     // if the user was trying to attach a name to the type, or whether the name
     // is some unrelated trailing syntax.
@@ -7131,7 +7368,10 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
     }
   }
 
+  std::cout << "Parser::ParseDirectDeclarator <a5>" << std::endl;
+
   if (Tok.is(tok::l_paren)) {
+    std::cout << "Parser::ParseDirectDeclarator <ab2>" << std::endl;
     // If this might be an abstract-declarator followed by a direct-initializer,
     // check whether this is a valid declarator chunk. If it can't be, assume
     // that it's an initializer instead.
@@ -7164,6 +7404,7 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
         DeclScopeObj.EnterDeclaratorScope();
     }
   } else if (D.mayOmitIdentifier()) {
+    std::cout << "Parser::ParseDirectDeclarator <a7>" << std::endl;
     // This could be something simple like "int" (in which case the declarator
     // portion is empty), if an abstract-declarator is allowed.
     D.SetIdentifier(nullptr, Tok.getLocation());
@@ -7224,16 +7465,24 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
     D.setInvalidType(true);
   }
 
+  std::cout << "Parser::ParseDirectDeclarator <a9>" << std::endl;
+
  PastIdentifier:
   assert(D.isPastIdentifier() &&
          "Haven't past the location of the identifier yet?");
 
   // Don't parse attributes unless we have parsed an unparenthesized name.
-  if (D.hasName() && !D.getNumTypeObjects())
+  if (D.hasName() && !D.getNumTypeObjects()) {
+    std::cout << "Parser::ParseDirectDeclarator <ab3>" << std::endl;
     MaybeParseCXX11Attributes(D);
+  }
+
+  std::cout << "Parser::ParseDirectDeclarator <b3>" << std::endl;
 
   while (true) {
+    std::cout << "Parser::ParseDirectDeclarator <ab4>" << std::endl;
     if (Tok.is(tok::l_paren)) {
+      std::cout << "Parser::ParseDirectDeclarator <ab5>" << std::endl;
       bool IsFunctionDeclaration = D.isFunctionDeclaratorAFunctionDeclaration();
       // Enter function-declaration scope, limiting any declarators to the
       // function prototype scope, including parameter declarators.
@@ -7283,8 +7532,10 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
         Actions.ActOnFinishFunctionDeclarationDeclarator(D);
       PrototypeScope.Exit();
     } else if (Tok.is(tok::l_square)) {
+      std::cout << "Parser::ParseDirectDeclarator <ab6>" << std::endl;
       ParseBracketDeclarator(D);
     } else if (Tok.isRegularKeywordAttribute()) {
+      std::cout << "Parser::ParseDirectDeclarator <ab7>" << std::endl;
       // For consistency with attribute parsing.
       Diag(Tok, diag::err_keyword_not_allowed) << Tok.getIdentifierInfo();
       bool TakesArgs = doesKeywordAttributeTakeArgs(Tok.getKind());
@@ -7295,6 +7546,7 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
           T.skipToEnd();
       }
     } else if (Tok.is(tok::kw_requires) && D.hasGroupingParens()) {
+      std::cout << "Parser::ParseDirectDeclarator <ab8>" << std::endl;
       // This declarator is declaring a function, but the requires clause is
       // in the wrong place:
       //   void (f() requires true);
@@ -7311,9 +7563,11 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
         // We're already ill-formed if we got here but we'll accept it anyway.
         D.setTrailingRequiresClause(TrailingRequiresClause.get());
     } else {
+      std::cout << "Parser::ParseDirectDeclarator <b6>" << std::endl;
       break;
     }
   }
+  std::cout << "Parser::ParseDirectDeclarator <end>" << std::endl;
 }
 
 void Parser::ParseDecompositionDeclarator(Declarator &D) {
@@ -7503,6 +7757,7 @@ void Parser::ParseParenDeclarator(Declarator &D) {
 
     bool hadGroupingParens = D.hasGroupingParens();
     D.setGroupingParens(true);
+    std::cout << "aa4" << std::endl;
     ParseDeclaratorInternal(D, &Parser::ParseDirectDeclarator);
     // Match the ')'.
     T.consumeClose();
@@ -8012,6 +8267,7 @@ void Parser::ParseParameterDeclarationClause(
                               : DeclaratorCtx == DeclaratorContext::LambdaExpr
                                   ? DeclaratorContext::LambdaExprParameter
                                   : DeclaratorContext::Prototype);
+    std::cout << "bb2" << std::endl;
     ParseDeclarator(ParmDeclarator);
 
     if (ThisLoc.isValid())
@@ -8347,6 +8603,7 @@ void Parser::ParseMisplacedBracketDeclarator(Declarator &D) {
 
   SourceLocation SuggestParenLoc = Tok.getLocation();
 
+  std::cout << "aa5" << std::endl;
   // Now that the brackets are removed, try parsing the declarator again.
   ParseDeclaratorInternal(D, &Parser::ParseDirectDeclarator);
 
@@ -8513,6 +8770,7 @@ void Parser::ParseAtomicSpecifier(DeclSpec &DS) {
   if (T.consumeOpen())
     return;
 
+  std::cout << "call to parse type name a5" << std::endl;
   TypeResult Result = ParseTypeName();
   if (Result.isInvalid()) {
     SkipUntil(tok::r_paren, StopAtSemi);
@@ -8666,6 +8924,7 @@ TypeResult Parser::ParseTypeFromString(StringRef TypeStr, StringRef Context,
   ParseScope LocalScope(this, 0);
 
   // Parse the type.
+  std::cout << "call to parse type name a6" << std::endl;
   TypeResult Result = ParseTypeName(nullptr);
 
   // Check if we parsed the whole thing.

@@ -14777,6 +14777,9 @@ public:
   QualType BuildQualifiedType(QualType T, SourceLocation Loc, unsigned CVRA,
                               const DeclSpec *DS = nullptr);
 
+  QualType BuildUniquePointerType(QualType T, SourceLocation Loc,
+                                  DeclarationName Entity);
+
   /// Build a pointer type.
   ///
   /// \param T The type to which we'll be building a pointer.

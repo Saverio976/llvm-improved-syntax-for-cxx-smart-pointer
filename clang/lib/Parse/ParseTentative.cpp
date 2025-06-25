@@ -14,6 +14,7 @@
 #include "clang/Basic/DiagnosticParse.h"
 #include "clang/Parse/Parser.h"
 #include "clang/Sema/ParsedTemplate.h"
+#include <iostream>
 using namespace clang;
 
 /// isCXXDeclarationStatement - C++-specialized function that disambiguates
@@ -625,7 +626,7 @@ Parser::isCXXConditionDeclarationOrInitStatement(bool CanBeInitStatement,
   ///   type-specifier-seq abstract-declarator[opt]
   ///
 bool Parser::isCXXTypeId(TentativeCXXTypeIdContext Context, bool &isAmbiguous) {
-
+  std::cout << "Parser::isCXXTypeId <start>" << std::endl;
   isAmbiguous = false;
 
   // C++ 8.2p2:
@@ -1628,6 +1629,7 @@ Parser::isCXXDeclarationSpecifier(ImplicitTypenameContext AllowImplicitTypename,
     if (TemplateId->Kind != TNK_Type_template)
       return TPResult::False;
     CXXScopeSpec SS;
+    std::cout << "call to AnnotateTemplateIdTokenAsType <c1>" << std::endl;
     AnnotateTemplateIdTokenAsType(SS, AllowImplicitTypename);
     assert(Tok.is(tok::annot_typename));
     goto case_typename;

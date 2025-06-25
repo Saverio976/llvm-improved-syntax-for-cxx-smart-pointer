@@ -22,6 +22,8 @@
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/SemaDiagnostic.h"
 #include "llvm/Support/TimeProfiler.h"
+#include <iostream>
+#include <ostream>
 using namespace clang;
 
 /// Re-enter a possible template scope, creating as many template parameter
@@ -769,6 +771,7 @@ NamedDecl *Parser::ParseTypeParameter(unsigned Depth, unsigned Position) {
     // at the current level.
     TemplateParameterDepthRAII CurTemplateDepthTracker(TemplateParameterDepth);
     ++CurTemplateDepthTracker;
+    std::cout << "call to parse type name c2" << std::endl;
     DefaultArg =
         ParseTypeName(/*Range=*/nullptr, DeclaratorContext::TemplateTypeArg)
             .get();
@@ -1023,6 +1026,7 @@ bool Parser::ParseGreaterThanInTemplateList(SourceLocation LAngleLoc,
                                             SourceLocation &RAngleLoc,
                                             bool ConsumeLastToken,
                                             bool ObjCGenericList) {
+  std::cout << "Parser::ParseGreaterThanInTemplateList <start>" << std::endl;
   // What will be left once we've consumed the '>'.
   tok::TokenKind RemainingToken;
   const char *ReplacementStr = "> >";
@@ -1076,6 +1080,8 @@ bool Parser::ParseGreaterThanInTemplateList(SourceLocation LAngleLoc,
   // extend that treatment to also apply to the '>>>' token.
   //
   // Objective-C allows this in its type parameter / argument lists.
+
+  std::cout << "Parser::ParseGreaterThanInTemplateList <a1>" << std::endl;
 
   SourceLocation TokBeforeGreaterLoc = PrevTokLocation;
   SourceLocation TokLoc = Tok.getLocation();
@@ -1174,6 +1180,7 @@ bool Parser::ParseGreaterThanInTemplateList(SourceLocation LAngleLoc,
     Tok = Greater;
   }
 
+  std::cout << "Parser::ParseGreaterThanInTemplateList <end>" << std::endl;
   return false;
 }
 
@@ -1193,6 +1200,8 @@ bool Parser::ParseTemplateIdAfterTemplateName(bool ConsumeLastToken,
                                               TemplateArgList &TemplateArgs,
                                               SourceLocation &RAngleLoc,
                                               TemplateTy Template) {
+
+  std::cout << "Parser::ParseTemplateIdAfterTemplateName <start>" << std::endl;
   assert(Tok.is(tok::less) && "Must have already parsed the template-name");
 
   // Consume the '<'.
@@ -1204,8 +1213,10 @@ bool Parser::ParseTemplateIdAfterTemplateName(bool ConsumeLastToken,
     GreaterThanIsOperatorScope G(GreaterThanIsOperator, false);
     if (!Tok.isOneOf(tok::greater, tok::greatergreater,
                      tok::greatergreatergreater, tok::greaterequal,
-                     tok::greatergreaterequal))
+                     tok::greatergreaterequal)) {
+      std::cout << "Parser::ParseTemplateIdAfterTemplateName <a1>" << std::endl;
       Invalid = ParseTemplateArgumentList(TemplateArgs, Template, LAngleLoc);
+    }
 
     if (Invalid) {
       // Try to find the closing '>'.
@@ -1217,6 +1228,7 @@ bool Parser::ParseTemplateIdAfterTemplateName(bool ConsumeLastToken,
     }
   }
 
+  std::cout << "Parser::ParseTemplateIdAfterTemplateName <end>" << std::endl;
   return ParseGreaterThanInTemplateList(LAngleLoc, RAngleLoc, ConsumeLastToken,
                                         /*ObjCGenericList=*/false) ||
          Invalid;
@@ -1269,6 +1281,7 @@ bool Parser::AnnotateTemplateIdToken(TemplateTy Template, TemplateNameKind TNK,
                                      UnqualifiedId &TemplateName,
                                      bool AllowTypeAnnotation,
                                      bool TypeConstraint) {
+  std::cout << "Parser::AnnotateTemplateIdToken <start>" << std::endl;
   assert(getLangOpts().CPlusPlus && "Can only annotate template-ids in C++");
   assert((Tok.is(tok::less) || TypeConstraint) &&
          "Parser isn't at the beginning of a template-id");
@@ -1286,6 +1299,7 @@ bool Parser::AnnotateTemplateIdToken(TemplateTy Template, TemplateNameKind TNK,
   TemplateArgList TemplateArgs;
   bool ArgsInvalid = false;
   if (!TypeConstraint || Tok.is(tok::less)) {
+    std::cout << "call to ParseTemplateIdAfterTemplateName <a4>" << std::endl;
     ArgsInvalid = ParseTemplateIdAfterTemplateName(
         false, LAngleLoc, TemplateArgs, RAngleLoc, Template);
     // If we couldn't recover from invalid arguments, don't form an annotation
@@ -1295,11 +1309,13 @@ bool Parser::AnnotateTemplateIdToken(TemplateTy Template, TemplateNameKind TNK,
     if (RAngleLoc.isInvalid())
       return true;
   }
+  std::cout << "Parser::AnnotateTemplateIdToken <a1>" << std::endl;
 
   ASTTemplateArgsPtr TemplateArgsPtr(TemplateArgs);
 
   // Build the annotation token.
   if (TNK == TNK_Type_template && AllowTypeAnnotation) {
+    std::cout << "Parser::AnnotateTemplateIdToken <a2>" << std::endl;
     TypeResult Type = ArgsInvalid
                           ? TypeError()
                           : Actions.ActOnTemplateIdType(
@@ -1316,6 +1332,7 @@ bool Parser::AnnotateTemplateIdToken(TemplateTy Template, TemplateNameKind TNK,
     else
       Tok.setLocation(TemplateNameLoc);
   } else {
+    std::cout << "Parser::AnnotateTemplateIdToken <a3>" << std::endl;
     // Build a template-id annotation token that can be processed
     // later.
     Tok.setKind(tok::annot_template_id);
@@ -1347,6 +1364,8 @@ bool Parser::AnnotateTemplateIdToken(TemplateTy Template, TemplateNameKind TNK,
   // In case the tokens were cached, have Preprocessor replace them with the
   // annotation token.
   PP.AnnotateCachedTokens(Tok);
+
+  std::cout << "Parser::AnnotateTemplateIdToken <end>" << std::endl;
   return false;
 }
 
@@ -1363,11 +1382,12 @@ bool Parser::AnnotateTemplateIdToken(TemplateTy Template, TemplateNameKind TNK,
 /// denotes a dependent type.
 /// \param IsClassName Is this template-id appearing in a context where we
 /// know it names a class, such as in an elaborated-type-specifier or
-/// base-specifier? ('typename' and 'template' are unneeded and disallowed
+/// base-specifier? ('typename' and 'template' are unneeded and disallowed)
 /// in those contexts.)
 void Parser::AnnotateTemplateIdTokenAsType(
     CXXScopeSpec &SS, ImplicitTypenameContext AllowImplicitTypename,
     bool IsClassName) {
+  std::cout << "Parser::AnnotateTemplateIdTokenAsType <start> IsClassName={" << IsClassName << "} AllowImplicitTypename={" << static_cast<int>(AllowImplicitTypename) << "}" << std::endl;
   assert(Tok.is(tok::annot_template_id) && "Requires template-id tokens");
 
   TemplateIdAnnotation *TemplateId = takeTemplateIdAnnotation(Tok);
@@ -1396,6 +1416,7 @@ void Parser::AnnotateTemplateIdTokenAsType(
   // Replace the template-id annotation token, and possible the scope-specifier
   // that precedes it, with the typename annotation token.
   PP.AnnotateCachedTokens(Tok);
+  std::cout << "Parser::AnnotateTemplateIdTokenAsType <end>" << std::endl;
 }
 
 /// Determine whether the given token can end a template argument.
@@ -1492,6 +1513,7 @@ ParsedTemplateArgument Parser::ParseTemplateTemplateArgument() {
 ///         braced-init-list  [C++26, DR]
 ///
 ParsedTemplateArgument Parser::ParseTemplateArgument() {
+  std::cout << "Parser::ParseTemplateArgument <start>" << std::endl;
   // C++ [temp.arg]p2:
   //   In a template-argument, an ambiguity between a type-id and an
   //   expression is resolved to a type-id, regardless of the form of
@@ -1507,6 +1529,8 @@ ParsedTemplateArgument Parser::ParseTemplateArgument() {
     /*LambdaContextDecl=*/nullptr,
     /*ExprContext=*/Sema::ExpressionEvaluationContextRecord::EK_TemplateArgument);
   if (isCXXTypeId(TypeIdAsTemplateArgument)) {
+    std::cout << "Parser::ParseTemplateArgument <a1>" << std::endl;
+    std::cout << "call to parse type name c3" << std::endl;
     TypeResult TypeArg = ParseTypeName(
         /*Range=*/nullptr, DeclaratorContext::TemplateArg);
     return Actions.ActOnTemplateTypeArgument(TypeArg);
@@ -1514,30 +1538,39 @@ ParsedTemplateArgument Parser::ParseTemplateArgument() {
 
   // Try to parse a template template argument.
   {
+    std::cout << "Parser::ParseTemplateArgument <a2>" << std::endl;
     TentativeParsingAction TPA(*this);
 
     ParsedTemplateArgument TemplateTemplateArgument
       = ParseTemplateTemplateArgument();
     if (!TemplateTemplateArgument.isInvalid()) {
+      std::cout << "Parser::ParseTemplateArgument <a3>" << std::endl;
       TPA.Commit();
       return TemplateTemplateArgument;
     }
 
     // Revert this tentative parse to parse a non-type template argument.
+    std::cout << "Parser::ParseTemplateArgument <a4>" << std::endl;
     TPA.Revert();
   }
 
   // Parse a non-type template argument.
   ExprResult ExprArg;
   SourceLocation Loc = Tok.getLocation();
-  if (getLangOpts().CPlusPlus11 && Tok.is(tok::l_brace))
+  if (getLangOpts().CPlusPlus11 && Tok.is(tok::l_brace)) {
+    std::cout << "Parser::ParseTemplateArgument <a5>" << std::endl;
     ExprArg = ParseBraceInitializer();
-  else
+  }
+  else {
+    std::cout << "Parser::ParseTemplateArgument <a6>" << std::endl;
     ExprArg = ParseConstantExpressionInExprEvalContext(MaybeTypeCast);
+  }
   if (ExprArg.isInvalid() || !ExprArg.get()) {
+    std::cout << "Parser::ParseTemplateArgument <a7>" << std::endl;
     return ParsedTemplateArgument();
   }
 
+  std::cout << "Parser::ParseTemplateArgument <a8>" << std::endl;
   return ParsedTemplateArgument(ParsedTemplateArgument::NonType,
                                 ExprArg.get(), Loc);
 }
@@ -1553,7 +1586,7 @@ ParsedTemplateArgument Parser::ParseTemplateArgument() {
 bool Parser::ParseTemplateArgumentList(TemplateArgList &TemplateArgs,
                                        TemplateTy Template,
                                        SourceLocation OpenLoc) {
-
+  std::cout << "Parser::ParseTemplateArgumentList <start>" << std::endl;
   ColonProtectionRAIIObject ColonProtection(*this, false);
 
   auto RunSignatureHelp = [&] {
@@ -1565,6 +1598,7 @@ bool Parser::ParseTemplateArgumentList(TemplateArgList &TemplateArgs,
   };
 
   do {
+    std::cout << "Parser::ParseTemplateArgumentList <a1>" << std::endl;
     PreferredType.enterFunctionArgument(Tok.getLocation(), RunSignatureHelp);
     ParsedTemplateArgument Arg = ParseTemplateArgument();
     SourceLocation EllipsisLoc;
@@ -1584,6 +1618,7 @@ bool Parser::ParseTemplateArgumentList(TemplateArgList &TemplateArgs,
     // arguments.
   } while (TryConsumeToken(tok::comma));
 
+  std::cout << "Parser::ParseTemplateArgumentList <end>" << std::endl;
   return false;
 }
 

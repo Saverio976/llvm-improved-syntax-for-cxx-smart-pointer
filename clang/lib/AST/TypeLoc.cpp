@@ -28,6 +28,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <iostream>
 
 using namespace clang;
 
@@ -72,8 +73,11 @@ public:
 
 /// Returns the alignment of the type source info data block.
 unsigned TypeLoc::getLocalAlignmentForType(QualType Ty) {
+  std::cout << "TypeLoc::getLocalAlignmentForType <start>" << std::endl;
   if (Ty.isNull()) return 1;
-  return TypeAligner().Visit(TypeLoc(Ty, nullptr));
+  auto r = TypeAligner().Visit(TypeLoc(Ty, nullptr)); 
+  std::cout << "TypeLoc::getLocalAlignmentForType <end>" << std::endl;
+  return r;
 }
 
 namespace {
@@ -92,17 +96,22 @@ public:
 
 /// Returns the size of the type source info data block.
 unsigned TypeLoc::getFullDataSizeForType(QualType Ty) {
+  std::cout << "TypeLoc::getFullDataSizeForType <start>" << std::endl;
   unsigned Total = 0;
   TypeLoc TyLoc(Ty, nullptr);
   unsigned MaxAlign = 1;
   while (!TyLoc.isNull()) {
+    std::cout << "TypeLoc::getFullDataSizeForType <while loop>" << std::endl;
     unsigned Align = getLocalAlignmentForType(TyLoc.getType());
     MaxAlign = std::max(Align, MaxAlign);
     Total = llvm::alignTo(Total, Align);
+    std::cout << "TypeLoc::getFullDataSizeForType <before visit>" << std::endl;
     Total += TypeSizer().Visit(TyLoc);
+    std::cout << "TypeLoc::getFullDataSizeForType <after visit>" << std::endl;
     TyLoc = TyLoc.getNextTypeLoc();
   }
   Total = llvm::alignTo(Total, MaxAlign);
+  std::cout << "TypeLoc::getFullDataSizeForType <end>" << std::endl;
   return Total;
 }
 
