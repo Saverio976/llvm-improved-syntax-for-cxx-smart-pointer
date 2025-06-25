@@ -6987,66 +6987,12 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
     else if (Kind == tok::percent) {
       // TODO:TODO: change type to something
       // Remember that we parsed a unique pointer type, and remember the type-quals.
-      auto &DSs = D.getMutableDeclSpec();
-
-      CXXScopeSpec SS;
-      {
-        IdentifierInfo &stdIdent = Actions.Context.Idents.get("std");
-        DeclarationName declName = Actions.Context.DeclarationNames.getIdentifier(&stdIdent);
-        LookupResult Found = LookupResult(Actions, declName, Loc,
-            Sema::LookupNameKind::LookupNestedNameSpecifierName);
-        Actions.LookupName(Found, Actions.getCurScope());
-        NamedDecl *SD =
-            Found.isSingleResult() ? Found.getRepresentativeDecl() : nullptr;
-        if (NamespaceDecl *Namespace = dyn_cast<NamespaceDecl>(SD)) {
-          std::cout << "Parser::ParseDeclarationSpecifiers <Casted to Namespace>" << std::endl;
-          SS.Extend(Actions.Context, Namespace, Loc, Loc);
-        }
-      }
-      OpaquePtr<TemplateName> tName;
-      {
-        UnqualifiedId TemplateName;
-        TemplateName.setIdentifier(&Actions.Context.Idents.get("unique_ptr"), Loc);
-        bool MemberOfUnknownSpecialization;
-        if (TemplateNameKind TNK = Actions.isTemplateName(
-              Actions.getCurScope(), SS,
-              false, TemplateName, nullptr,
-              false, tName, MemberOfUnknownSpecialization,
-              false)) {
-          std::cout << "Parser::ParseDeclarationSpecifiers <AMAZING>" << std::endl;
-        } else {
-          std::cout << "Parser::ParseDeclarationSpecifiers <Realy bad>" << std::endl;
-        }
-      }
-      QualType TRes;
-      {
-        IdentifierInfo &idInfo = Actions.Context.Idents.get("unique_ptr");                                                  // TODO:TODO: put "unique_ptr" inside // FIX:
-        typedef SmallVector<ParsedTemplateArgument, 16> TemplateArgList;
-        TemplateArgList TemplateArgs;
-        // --- fix this
-        QualType T = D.getDeclSpec().getRepAsType().get();
-        QualType Tn(T.getTypePtr(), 0);
-        TypeSourceInfo *TInfoTmp = Actions.Context.getTrivialTypeSourceInfo(Tn, Loc);;
-        TypeResult TypeArg = Actions.CreateParsedType(Tn, TInfoTmp);
-        // -- end fix this
-        ParsedTemplateArgument Arg = Actions.ActOnTemplateTypeArgument(TypeArg);
-        TemplateArgs.push_back(Arg);
-        ASTTemplateArgsPtr TemplateArgsPtr(TemplateArgs);
-        TypeResult Type = Actions.ActOnTemplateIdType(Actions.getCurScope(), SS, Loc, tName, &idInfo, Loc, Loc, TemplateArgsPtr, Loc, false, false, ImplicitTypenameContext::No);
-
-        unsigned int DiagID;
-        const char *PrevSpec = nullptr;
-        DSs.SetTypeSpecType(DeclSpec::TST_typename,
-                                      Tok.getEndLoc(),
-                                       PrevSpec, DiagID, Type, Actions.getASTContext().getPrintingPolicy());
-      }
-
-      //D.AddTypeInfo(DeclaratorChunk::getUniquePointer(
-      //                  DS.getTypeQualifiers(), Loc, DS.getConstSpecLoc(),
-      //                  DS.getVolatileSpecLoc(), DS.getRestrictSpecLoc(),
-      //                  DS.getAtomicSpecLoc(), DS.getUnalignedSpecLoc()),
-      //              std::move(DS.getAttributes()), SourceLocation());
-      //std::cout << "We parse a unique pointer syntax" << std::endl;
+      D.AddTypeInfo(DeclaratorChunk::getUniquePointer(
+                        DS.getTypeQualifiers(), Loc, DS.getConstSpecLoc(),
+                        DS.getVolatileSpecLoc(), DS.getRestrictSpecLoc(),
+                        DS.getAtomicSpecLoc(), DS.getUnalignedSpecLoc()),
+                    std::move(DS.getAttributes()), SourceLocation());
+      std::cout << "We parse a unique pointer syntax" << std::endl;
     } else
       // Remember that we parsed a Block type, and remember the type-quals.
       D.AddTypeInfo(
