@@ -4736,6 +4736,7 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
               false, tName, MemberOfUnknownSpecialization,
               false)) {
         } else {
+          llvm_unreachable("#include <memory>");
         }
       }
       {
