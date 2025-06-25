@@ -4829,9 +4829,15 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
         TemplateArgs.push_back(Arg);
         ASTTemplateArgsPtr TemplateArgsPtr(TemplateArgs);
         TypeResult Type = S.ActOnTemplateIdType(S.getCurScope(), SS, DeclType.Loc, tName, &idInfo, DeclType.Loc, DeclType.Loc, TemplateArgsPtr, DeclType.Loc, false, false, ImplicitTypenameContext::No);
-        auto &DS = D.getDeclSpec();
+        AttributeFactory AttrFactory;
+        DeclSpec DSTmp(AttrFactory);
+        const char *PrevSpec;
+        unsigned int DiagID;
+        DSTmp.SetTypeSpecType(DeclSpec::TST_typename, DeclType.Loc, PrevSpec, DiagID, Type, S.getASTContext().getPrintingPolicy());
+        T = S.GetTypeFromParser(DSTmp.getRepAsType());
+        //D.getDeclSpec().getRepAsType();
 
-        T = S.BuildQualifiedType(Type.get().get(), DeclType.Loc, 0);
+        //T = S.BuildQualifiedType(Type.get().get(), DeclType.Loc, 0);
 
         std::cerr << "dump::::3" << std::endl;
 
