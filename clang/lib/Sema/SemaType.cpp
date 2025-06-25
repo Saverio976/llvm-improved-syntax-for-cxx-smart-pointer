@@ -4834,8 +4834,9 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
         const char *PrevSpec;
         unsigned int DiagID;
         DSTmp.SetTypeSpecType(DeclSpec::TST_typename, DeclType.Loc, PrevSpec, DiagID, Type, S.getASTContext().getPrintingPolicy());
-        T = S.GetTypeFromParser(DSTmp.getRepAsType());
-        //D.getDeclSpec().getRepAsType();
+        D.getMutableDeclSpec().ClearTypeSpecType();
+        D.getMutableDeclSpec().SetTypeSpecType(DeclSpec::TST_typename, DeclType.Loc, PrevSpec, DiagID, Type, S.getASTContext().getPrintingPolicy());
+        T = S.GetTypeFromParser(D.getDeclSpec().getRepAsType());
 
         //T = S.BuildQualifiedType(Type.get().get(), DeclType.Loc, 0);
 
@@ -6419,21 +6420,30 @@ GetTypeSourceInfoForDeclarator(TypeProcessingState &State,
   }
 
   for (unsigned i = 0, e = D.getNumTypeObjects(); i != e; ++i) {
+    std::cout << "GetTypeSourceInfoForDeclarator <for num type objects>" << std::endl;
     // Microsoft property fields can have multiple sizeless array chunks
     // (i.e. int x[][][]). Don't create more than one level of incomplete array.
     if (CurrTL.getTypeLocClass() == TypeLoc::IncompleteArray && e != 1 &&
-        D.getDeclSpec().getAttributes().hasMSPropertyAttr())
+        D.getDeclSpec().getAttributes().hasMSPropertyAttr()) {
+      std::cout << "GetTypeSourceInfoForDeclarator <for num type objects : 1>" << std::endl;
       continue;
+    }
+    if (D.getTypeObject(i).Kind == DeclaratorChunk::UniquePointer) {
+      continue;
+    }
+    std::cout << "GetTypeSourceInfoForDeclarator <for num type objects : 2>" << std::endl;
 
     // An AtomicTypeLoc might be produced by an atomic qualifier in this
     // declarator chunk.
     if (AtomicTypeLoc ATL = CurrTL.getAs<AtomicTypeLoc>()) {
+      std::cout << "GetTypeSourceInfoForDeclarator <for num type objects : 3>" << std::endl;
       fillAtomicQualLoc(ATL, D.getTypeObject(i));
       CurrTL = ATL.getValueLoc().getUnqualifiedLoc();
     }
 
     bool HasDesugaredTypeLoc = true;
     while (HasDesugaredTypeLoc) {
+      std::cout << "GetTypeSourceInfoForDeclarator <for num type objects : 4 while>" << std::endl;
       switch (CurrTL.getTypeLocClass()) {
       case TypeLoc::MacroQualified: {
         auto TL = CurrTL.castAs<MacroQualifiedTypeLoc>();
@@ -6469,9 +6479,13 @@ GetTypeSourceInfoForDeclarator(TypeProcessingState &State,
       }
     }
 
+    std::cout << "GetTypeSourceInfoForDeclarator <for num type objects : 5>" << std::endl;
+
     DeclaratorLocFiller(S.Context, State, D.getTypeObject(i)).Visit(CurrTL);
     CurrTL = CurrTL.getNextTypeLoc().getUnqualifiedLoc();
   }
+
+  std::cout << "GetTypeSourceInfoForDeclarator <aa>" << std::endl;
 
   // If we have different source information for the return type, use
   // that.  This really only applies to C++ conversion functions.
