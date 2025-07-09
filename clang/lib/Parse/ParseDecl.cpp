@@ -6787,7 +6787,7 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
         std::move(DS.getAttributes()), SourceLocation());
   }
 
-  // Not a pointer, C++ reference, or block.
+  // Not a pointer, C++ reference, C++ smart pointer, or block.
   if (!isPtrOperatorToken(Kind, getLangOpts(), D.getContext())) {
     if (DirectDeclParser)
       (this->*DirectDeclParser)(D);
@@ -6891,6 +6891,7 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
                                                 Kind == tok::amp),
                   std::move(DS.getAttributes()), SourceLocation());
   }
+
 }
 
 // When correcting from misplaced brackets before the identifier, the location

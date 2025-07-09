@@ -636,6 +636,9 @@ public:
   bool AtomicFineGrainedMemory = false;
   bool AtomicIgnoreDenormalMode = false;
 
+  /// Indicates which smart pointer to use for the new smart pointer syntax.
+  std::string SmartPointer;
+
   LangOptions();
 
   /// Set language defaults for the given input language and

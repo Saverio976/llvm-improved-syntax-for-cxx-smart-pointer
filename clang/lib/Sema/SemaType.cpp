@@ -4711,7 +4711,7 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
         T = S.BuildQualifiedType(T, DeclType.Loc, DeclType.Ptr.TypeQuals);
       break;
     case DeclaratorChunk::UniquePointer: {
-      // TODO:TODO: edit here
+      // TODO:TODO:
       CXXScopeSpec SS;
       {
         IdentifierInfo &stdIdent = Context.Idents.get("std");
@@ -4723,24 +4723,28 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
             Found.isSingleResult() ? Found.getRepresentativeDecl() : nullptr;
         if (NamespaceDecl *Namespace = dyn_cast<NamespaceDecl>(SD)) {
           SS.Extend(Context, Namespace, DeclType.Loc, DeclType.Loc);
+        } else {
+          S.Diag(DeclType.Loc, diag::err_expected) << "#include <memory> // to use the smart pointer syntax";
+          break;
         }
       }
       OpaquePtr<TemplateName> tName;
       {
         UnqualifiedId TemplateName;
-        TemplateName.setIdentifier(&Context.Idents.get("unique_ptr"), DeclType.Loc);
+        TemplateName.setIdentifier(&Context.Idents.get(LangOpts.SmartPointer), DeclType.Loc);
         bool MemberOfUnknownSpecialization;
-        if (TemplateNameKind TNK = S.isTemplateName(
+        if (TemplateNameKind _ = S.isTemplateName(
               S.getCurScope(), SS,
               false, TemplateName, nullptr,
               false, tName, MemberOfUnknownSpecialization,
               false)) {
         } else {
-          llvm_unreachable("#include <memory>");
+          S.Diag(DeclType.Loc, diag::err_expected) << "smart pointer class; '" + LangOpts.SmartPointer + "' not found.";
+          break;
         }
       }
       {
-        IdentifierInfo &idInfo = Context.Idents.get("unique_ptr");                                                  // TODO:TODO: put "unique_ptr" inside // FIX:
+        IdentifierInfo &idInfo = Context.Idents.get(LangOpts.SmartPointer);
         typedef SmallVector<ParsedTemplateArgument, 16> TemplateArgList;
         TemplateArgList TemplateArgs;
         QualType Tn(T.getTypePtr(), 0);
@@ -4758,11 +4762,7 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
         D.getMutableDeclSpec().ClearTypeSpecType();
         D.getMutableDeclSpec().SetTypeSpecType(DeclSpec::TST_typename, DeclType.Loc, PrevSpec, DiagID, Type, S.getASTContext().getPrintingPolicy());
         T = S.GetTypeFromParser(D.getDeclSpec().getRepAsType());
-
-        //T = S.BuildQualifiedType(Type.get().get(), DeclType.Loc, 0);
-
       }
-      //T = S.BuildUniquePointerType(T, DeclType.Loc, Name);
       if (DeclType.Ptr.TypeQuals)
         T = S.BuildQualifiedType(T, DeclType.Loc, DeclType.Ptr.TypeQuals);
       break;
