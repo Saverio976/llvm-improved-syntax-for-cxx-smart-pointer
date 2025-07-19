@@ -11272,7 +11272,7 @@ void Sema::CheckConversionDeclarator(Declarator &D, QualType &R,
         break;
 
       case DeclaratorChunk::Pointer:
-      case DeclaratorChunk::UniquePointer:
+      case DeclaratorChunk::SmartPointer:
       case DeclaratorChunk::BlockPointer:
       case DeclaratorChunk::Reference:
       case DeclaratorChunk::MemberPointer:

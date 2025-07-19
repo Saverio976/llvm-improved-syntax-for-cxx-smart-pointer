@@ -2185,7 +2185,6 @@ bool Parser::MightBeDeclarator(DeclaratorContext Context) {
 
   case tok::amp:
   case tok::ampamp:
-  case tok::percent:
     return getLangOpts().CPlusPlus;
 
   case tok::l_square: // Might be an attribute on an unnamed bit-field.
@@ -2230,6 +2229,8 @@ bool Parser::MightBeDeclarator(DeclaratorContext Context) {
     }
 
   default:
+    if (getLangOpts().getSmartPointerFromName(tok::getPunctuatorSpelling(Tok.getKind())) != "")
+      return true;
     return Tok.isRegularKeywordAttribute();
   }
 }
@@ -6645,7 +6646,7 @@ static bool isPtrOperatorToken(tok::TokenKind Kind, const LangOptions &Lang,
   if (!Lang.CPlusPlus)
     return false;
 
-  if (Kind == tok::percent)
+  if (Lang.getSmartPointerFromName(tok::getPunctuatorSpelling(Kind)) != "")
     return true;
 
   if (Kind == tok::amp)
@@ -6799,7 +6800,7 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
   SourceLocation Loc = ConsumeToken();  // Eat the *, ^, &, && or %.
   D.SetRangeEnd(Loc);
 
-  if (Kind == tok::star || Kind == tok::caret || Kind == tok::percent) {
+  if (Kind == tok::star || Kind == tok::caret) {
     // Is a pointer.
     DeclSpec DS(AttrFactory);
 
@@ -6822,18 +6823,17 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
                         DS.getVolatileSpecLoc(), DS.getRestrictSpecLoc(),
                         DS.getAtomicSpecLoc(), DS.getUnalignedSpecLoc()),
                     std::move(DS.getAttributes()), SourceLocation());
-    else if (Kind == tok::percent)
-      // Remember that we parsed a unique pointer type, and remember the type-quals.
-      D.AddTypeInfo(DeclaratorChunk::getUniquePointer(
-                        DS.getTypeQualifiers(), Loc, DS.getConstSpecLoc(),
-                        DS.getVolatileSpecLoc(), DS.getRestrictSpecLoc(),
-                        DS.getAtomicSpecLoc(), DS.getUnalignedSpecLoc()),
-                    std::move(DS.getAttributes()), SourceLocation());
-    else
+    else {
       // Remember that we parsed a Block type, and remember the type-quals.
       D.AddTypeInfo(
           DeclaratorChunk::getBlockPointer(DS.getTypeQualifiers(), Loc),
           std::move(DS.getAttributes()), SourceLocation());
+    }
+  } else if (getLangOpts().getSmartPointerFromName(tok::getPunctuatorSpelling(Kind)) != "") {
+    DeclSpec DS(AttrFactory);
+    // Remember that we parsed a smart pointer type.
+    D.AddTypeInfo(DeclaratorChunk::getSmartPointer(Loc, Kind),
+                  std::move(DS.getAttributes()), SourceLocation());
   } else {
     // Is a reference
     DeclSpec DS(AttrFactory);
@@ -8362,7 +8362,7 @@ void Parser::ParseMisplacedBracketDeclarator(Declarator &D) {
   if (D.getNumTypeObjects() != 0) {
     switch (D.getTypeObject(D.getNumTypeObjects() - 1).Kind) {
     case DeclaratorChunk::Pointer:
-    case DeclaratorChunk::UniquePointer:
+    case DeclaratorChunk::SmartPointer:
     case DeclaratorChunk::Reference:
     case DeclaratorChunk::BlockPointer:
     case DeclaratorChunk::MemberPointer:

@@ -443,7 +443,7 @@ static DeclaratorChunk *maybeMovePastReturnType(Declarator &declarator,
 
     // If we find anything except a function, bail out.
     case DeclaratorChunk::Pointer:
-    case DeclaratorChunk::UniquePointer:
+    case DeclaratorChunk::SmartPointer:
     case DeclaratorChunk::BlockPointer:
     case DeclaratorChunk::Array:
     case DeclaratorChunk::Reference:
@@ -461,7 +461,7 @@ static DeclaratorChunk *maybeMovePastReturnType(Declarator &declarator,
         case DeclaratorChunk::Array:
         case DeclaratorChunk::Function:
         case DeclaratorChunk::Reference:
-        case DeclaratorChunk::UniquePointer:
+        case DeclaratorChunk::SmartPointer:
         case DeclaratorChunk::Pipe:
           continue;
 
@@ -541,7 +541,7 @@ static void distributeObjCPointerTypeAttr(TypeProcessingState &state,
 
     // Don't walk through these.
     case DeclaratorChunk::Reference:
-    case DeclaratorChunk::UniquePointer:
+    case DeclaratorChunk::SmartPointer:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Pipe:
       goto error;
@@ -571,7 +571,7 @@ static void distributeObjCPointerTypeAttrFromDeclarator(
       continue;
 
     case DeclaratorChunk::Reference:
-    case DeclaratorChunk::UniquePointer:
+    case DeclaratorChunk::SmartPointer:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Paren:
     case DeclaratorChunk::Array:
@@ -635,7 +635,7 @@ static void distributeFunctionTypeAttr(TypeProcessingState &state,
     case DeclaratorChunk::BlockPointer:
     case DeclaratorChunk::Array:
     case DeclaratorChunk::Reference:
-    case DeclaratorChunk::UniquePointer:
+    case DeclaratorChunk::SmartPointer:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Pipe:
       continue;
@@ -2836,7 +2836,7 @@ static void inferARCWriteback(TypeProcessingState &state,
     case DeclaratorChunk::Function:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Pipe:
-    case DeclaratorChunk::UniquePointer:
+    case DeclaratorChunk::SmartPointer:
       return;
     }
   }
@@ -2976,7 +2976,7 @@ static void diagnoseRedundantReturnTypeQualifiers(Sema &S, QualType RetTy,
     case DeclaratorChunk::Function:
     case DeclaratorChunk::BlockPointer:
     case DeclaratorChunk::Reference:
-    case DeclaratorChunk::UniquePointer:
+    case DeclaratorChunk::SmartPointer:
     case DeclaratorChunk::Array:
     case DeclaratorChunk::MemberPointer:
     case DeclaratorChunk::Pipe:
@@ -4710,28 +4710,42 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
       if (DeclType.Ptr.TypeQuals)
         T = S.BuildQualifiedType(T, DeclType.Loc, DeclType.Ptr.TypeQuals);
       break;
-    case DeclaratorChunk::UniquePointer: {
-      // TODO:TODO:
+    case DeclaratorChunk::SmartPointer: {
+      std::string SmartPointer = LangOpts.getSmartPointerFromName(tok::getPunctuatorSpelling(DeclType.Smart.SmartToken));
+      std::string SmartPointerID;
       CXXScopeSpec SS;
       {
-        IdentifierInfo &stdIdent = Context.Idents.get("std");
-        DeclarationName declName = Context.DeclarationNames.getIdentifier(&stdIdent);
-        LookupResult Found = LookupResult(S, declName, DeclType.Loc,
-            Sema::LookupNameKind::LookupNestedNameSpecifierName);
-        S.LookupName(Found, S.getCurScope());
-        NamedDecl *SD =
-            Found.isSingleResult() ? Found.getRepresentativeDecl() : nullptr;
-        if (NamespaceDecl *Namespace = dyn_cast<NamespaceDecl>(SD)) {
-          SS.Extend(Context, Namespace, DeclType.Loc, DeclType.Loc);
-        } else {
-          S.Diag(DeclType.Loc, diag::err_expected) << "#include <memory> // to use the smart pointer syntax";
+        std::size_t Start = 0;
+        auto DoublePoint = SmartPointer.find("::", Start);
+        bool IsError = false;
+        while (DoublePoint != std::string::npos) {
+          std::string NamespaceS = SmartPointer.substr(Start, DoublePoint - Start);
+          IdentifierInfo &stdIdent = Context.Idents.get(NamespaceS);
+          DeclarationName declName = Context.DeclarationNames.getIdentifier(&stdIdent);
+          LookupResult Found = LookupResult(S, declName, DeclType.Loc,
+              Sema::LookupNameKind::LookupNestedNameSpecifierName);
+          S.LookupName(Found, S.getCurScope());
+          NamedDecl *SD =
+              Found.isSingleResult() ? Found.getRepresentativeDecl() : nullptr;
+          if (NamespaceDecl *Namespace = dyn_cast<NamespaceDecl>(SD)) {
+            SS.Extend(Context, Namespace, DeclType.Loc, DeclType.Loc);
+          } else {
+            S.Diag(DeclType.Loc, diag::err_expected) << "Namespace '" + NamespaceS + "' not found.";
+            IsError = true;
+            break;
+          }
+          Start = DoublePoint + 2 /* "::" */;
+          DoublePoint = SmartPointer.find("::", Start);
+        }
+        if (IsError) {
           break;
         }
+        SmartPointerID = SmartPointer.substr(Start);
       }
       OpaquePtr<TemplateName> tName;
       {
         UnqualifiedId TemplateName;
-        TemplateName.setIdentifier(&Context.Idents.get(LangOpts.SmartPointer), DeclType.Loc);
+        TemplateName.setIdentifier(&Context.Idents.get(SmartPointerID), DeclType.Loc);
         bool MemberOfUnknownSpecialization;
         if (TemplateNameKind _ = S.isTemplateName(
               S.getCurScope(), SS,
@@ -4739,12 +4753,12 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
               false, tName, MemberOfUnknownSpecialization,
               false)) {
         } else {
-          S.Diag(DeclType.Loc, diag::err_expected) << "smart pointer class; '" + LangOpts.SmartPointer + "' not found.";
+          S.Diag(DeclType.Loc, diag::err_expected) << "smart pointer class; '" + SmartPointerID + "' not found.";
           break;
         }
       }
       {
-        IdentifierInfo &idInfo = Context.Idents.get(LangOpts.SmartPointer);
+        IdentifierInfo &idInfo = Context.Idents.get(SmartPointerID);
         typedef SmallVector<ParsedTemplateArgument, 16> TemplateArgList;
         TemplateArgList TemplateArgs;
         QualType Tn(T.getTypePtr(), 0);
@@ -4763,8 +4777,6 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
         D.getMutableDeclSpec().SetTypeSpecType(DeclSpec::TST_typename, DeclType.Loc, PrevSpec, DiagID, Type, S.getASTContext().getPrintingPolicy());
         T = S.GetTypeFromParser(D.getDeclSpec().getRepAsType());
       }
-      if (DeclType.Ptr.TypeQuals)
-        T = S.BuildQualifiedType(T, DeclType.Loc, DeclType.Ptr.TypeQuals);
       break;
     }
     case DeclaratorChunk::Reference: {
@@ -6330,7 +6342,7 @@ GetTypeSourceInfoForDeclarator(TypeProcessingState &State,
         D.getDeclSpec().getAttributes().hasMSPropertyAttr())
       continue;
 
-    if (D.getTypeObject(i).Kind == DeclaratorChunk::UniquePointer)
+    if (D.getTypeObject(i).Kind == DeclaratorChunk::SmartPointer)
       continue;
 
     // An AtomicTypeLoc might be produced by an atomic qualifier in this
@@ -7552,7 +7564,7 @@ static bool distributeNullabilityTypeAttr(TypeProcessingState &state,
 
     // Don't walk through these.
     case DeclaratorChunk::Reference:
-    case DeclaratorChunk::UniquePointer:
+    case DeclaratorChunk::SmartPointer:
     case DeclaratorChunk::Pipe:
       return false;
     }

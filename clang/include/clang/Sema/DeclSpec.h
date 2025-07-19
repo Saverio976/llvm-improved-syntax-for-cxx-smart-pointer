@@ -1251,7 +1251,7 @@ struct DeclaratorChunk {
   DeclaratorChunk() {};
 
   enum {
-    Pointer, Reference, Array, Function, BlockPointer, MemberPointer, Paren, Pipe, UniquePointer
+    Pointer, Reference, Array, Function, BlockPointer, MemberPointer, Paren, Pipe, SmartPointer
   } Kind;
 
   /// Loc - The place where this type was defined.
@@ -1296,6 +1296,13 @@ struct DeclaratorChunk {
     bool HasRestrict : 1;
     /// True if this is an lvalue reference, false if it's an rvalue reference.
     bool LValueRef : 1;
+    void destroy() {
+    }
+  };
+
+  struct SmartPointerTypeInfo {
+    tok::TokenKind SmartToken;
+
     void destroy() {
     }
   };
@@ -1636,6 +1643,7 @@ struct DeclaratorChunk {
 
   union {
     PointerTypeInfo       Ptr;
+    SmartPointerTypeInfo  Smart;
     ReferenceTypeInfo     Ref;
     ArrayTypeInfo         Arr;
     FunctionTypeInfo      Fun;
@@ -1648,7 +1656,7 @@ struct DeclaratorChunk {
     switch (Kind) {
     case DeclaratorChunk::Function:      return Fun.destroy();
     case DeclaratorChunk::Pointer:       return Ptr.destroy();
-    case DeclaratorChunk::UniquePointer: return Ptr.destroy();
+    case DeclaratorChunk::SmartPointer:  return Smart.destroy();
     case DeclaratorChunk::BlockPointer:  return Cls.destroy();
     case DeclaratorChunk::Reference:     return Ref.destroy();
     case DeclaratorChunk::Array:         return Arr.destroy();
@@ -1683,23 +1691,13 @@ struct DeclaratorChunk {
     return I;
   }
 
-  /// Return a DeclaratorChunk for a UniquePointer.
-  static DeclaratorChunk getUniquePointer(unsigned TypeQuals, SourceLocation Loc,
-                                    SourceLocation ConstQualLoc,
-                                    SourceLocation VolatileQualLoc,
-                                    SourceLocation RestrictQualLoc,
-                                    SourceLocation AtomicQualLoc,
-                                    SourceLocation UnalignedQualLoc) {
+  /// Return a DeclaratorChunk for a SmartPointer.
+  static DeclaratorChunk getSmartPointer(SourceLocation Loc, tok::TokenKind Tok) {
     DeclaratorChunk I;
-    I.Kind                = UniquePointer;
+    I.Kind                = SmartPointer;
     I.Loc                 = Loc;
-    new (&I.Ptr) PointerTypeInfo;
-    I.Ptr.TypeQuals       = TypeQuals;
-    I.Ptr.ConstQualLoc    = ConstQualLoc;
-    I.Ptr.VolatileQualLoc = VolatileQualLoc;
-    I.Ptr.RestrictQualLoc = RestrictQualLoc;
-    I.Ptr.AtomicQualLoc   = AtomicQualLoc;
-    I.Ptr.UnalignedQualLoc = UnalignedQualLoc;
+    new (&I.Smart) SmartPointerTypeInfo;
+    I.Smart.SmartToken = Tok;
     return I;
   }
 
@@ -2486,7 +2484,7 @@ public:
       case DeclaratorChunk::Paren:
         continue;
       case DeclaratorChunk::Pointer:
-      case DeclaratorChunk::UniquePointer:
+      case DeclaratorChunk::SmartPointer:
       case DeclaratorChunk::Reference:
       case DeclaratorChunk::Array:
       case DeclaratorChunk::BlockPointer:

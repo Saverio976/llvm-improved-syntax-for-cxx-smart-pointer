@@ -637,7 +637,7 @@ public:
   bool AtomicIgnoreDenormalMode = false;
 
   /// Indicates which smart pointer to use for the new smart pointer syntax.
-  std::string SmartPointer;
+  std::vector<std::string> SmartPointers;
 
   LangOptions();
 
@@ -668,6 +668,26 @@ public:
   /// Are we compiling a module?
   bool isCompilingModule() const {
     return getCompilingModule() != CMK_None;
+  }
+
+  std::string getSmartPointerFromName(const char *Name) const {
+    if (Name == nullptr) {
+      return "";
+    }
+    const auto _Name = std::string(Name);
+    std::size_t index = -1;
+    bool found = false;
+    for (std::size_t i = 0; i < SmartPointers.size(); i++) {
+      auto k = SmartPointers[i].substr(0, SmartPointers[i].find(','));
+      if (_Name == k) {
+        index = i;
+        found = true;
+      }
+    }
+    if (found) {
+      return SmartPointers[index].substr(SmartPointers[index].find(',') + 1);
+    }
+    return "";
   }
 
   /// Are we compiling a module implementation?
