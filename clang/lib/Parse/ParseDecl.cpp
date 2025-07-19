@@ -6800,7 +6800,7 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
   SourceLocation Loc = ConsumeToken();  // Eat the *, ^, &, && or %.
   D.SetRangeEnd(Loc);
 
-  if (Kind == tok::star || Kind == tok::caret) {
+  if (Kind == tok::star || Kind == tok::caret || getLangOpts().getSmartPointerFromName(tok::getPunctuatorSpelling(Kind)) != "") {
     // Is a pointer.
     DeclSpec DS(AttrFactory);
 
@@ -6824,16 +6824,16 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
                         DS.getAtomicSpecLoc(), DS.getUnalignedSpecLoc()),
                     std::move(DS.getAttributes()), SourceLocation());
     else {
-      // Remember that we parsed a Block type, and remember the type-quals.
-      D.AddTypeInfo(
-          DeclaratorChunk::getBlockPointer(DS.getTypeQualifiers(), Loc),
-          std::move(DS.getAttributes()), SourceLocation());
+      if (getLangOpts().getSmartPointerFromName(tok::getPunctuatorSpelling(Kind)) != "")
+        // Remember that we parsed a smart pointer type.
+        D.AddTypeInfo(DeclaratorChunk::getSmartPointer(Loc, Kind),
+                      std::move(DS.getAttributes()), SourceLocation());
+      else
+        // Remember that we parsed a Block type, and remember the type-quals.
+        D.AddTypeInfo(
+            DeclaratorChunk::getBlockPointer(DS.getTypeQualifiers(), Loc),
+            std::move(DS.getAttributes()), SourceLocation());
     }
-  } else if (getLangOpts().getSmartPointerFromName(tok::getPunctuatorSpelling(Kind)) != "") {
-    DeclSpec DS(AttrFactory);
-    // Remember that we parsed a smart pointer type.
-    D.AddTypeInfo(DeclaratorChunk::getSmartPointer(Loc, Kind),
-                  std::move(DS.getAttributes()), SourceLocation());
   } else {
     // Is a reference
     DeclSpec DS(AttrFactory);
