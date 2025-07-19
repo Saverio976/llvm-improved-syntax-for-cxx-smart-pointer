@@ -4714,11 +4714,9 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
       std::string SmartPointerID;
       CXXScopeSpec SS;
       {
-        std::size_t Start = 0;
-        auto DoublePoint = SmartPointer.find("::", Start);
-        bool IsError = false;
-        while (DoublePoint != std::string::npos) {
-          std::string NamespaceS = SmartPointer.substr(Start, DoublePoint - Start);
+        auto DoublePoint = SmartPointer.rfind("::");
+          if (DoublePoint != std::string::npos) {
+          std::string NamespaceS = SmartPointer.substr(0, DoublePoint);
           IdentifierInfo &stdIdent = Context.Idents.get(NamespaceS);
           DeclarationName declName = Context.DeclarationNames.getIdentifier(&stdIdent);
           LookupResult Found = LookupResult(S, declName, DeclType.Loc,
@@ -4730,16 +4728,12 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
             SS.Extend(Context, Namespace, DeclType.Loc, DeclType.Loc);
           } else {
             S.Diag(DeclType.Loc, diag::err_expected) << "Namespace '" + NamespaceS + "' not found.";
-            IsError = true;
             break;
           }
-          Start = DoublePoint + 2 /* "::" */;
-          DoublePoint = SmartPointer.find("::", Start);
+          SmartPointerID = SmartPointer.substr(DoublePoint + 2);
+        } else {
+          SmartPointerID = SmartPointer;
         }
-        if (IsError) {
-          break;
-        }
-        SmartPointerID = SmartPointer.substr(Start);
       }
       OpaquePtr<TemplateName> tName;
       {
