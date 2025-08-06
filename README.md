@@ -1,44 +1,48 @@
-# The LLVM Compiler Infrastructure
+> [!NOTE]
+> This is a fork of the [llvm-project](https://github.com/llvm/llvm-project)
 
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/llvm/llvm-project/badge)](https://securityscorecards.dev/viewer/?uri=github.com/llvm/llvm-project)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8273/badge)](https://www.bestpractices.dev/projects/8273)
-[![libc++](https://github.com/llvm/llvm-project/actions/workflows/libcxx-build-and-test.yaml/badge.svg?branch=main&event=schedule)](https://github.com/llvm/llvm-project/actions/workflows/libcxx-build-and-test.yaml?query=event%3Aschedule)
+> [!NOTE]
+> This fork is part of my dissertation at [Heriot Watt University](https://www.hw.ac.uk/), [School of Mathematical and Computer Science](https://www.hw.ac.uk/about/our-schools/mathematical-and-computer-sciences).
 
-Welcome to the LLVM project!
+# LLVM - An Improved Syntax for C++ Smart Pointers
 
-This repository contains the source code for LLVM, a toolkit for the
-construction of highly optimized compilers, optimizers, and run-time
-environments.
+## Usage
 
-The LLVM project has multiple components. The core of the project is
-itself called "LLVM". This contains all of the tools, libraries, and header
-files needed to process intermediate representations and convert them into
-object files. Tools include an assembler, disassembler, bitcode analyzer, and
-bitcode optimizer.
+### 1. Code with the syntax
 
-C-like languages use the [Clang](https://clang.llvm.org/) frontend. This
-component compiles C, C++, Objective-C, and Objective-C++ code into LLVM bitcode
--- and from there into object files, using LLVM.
+`test.cpp`
+```c
+#include <memory>
 
-Other components include:
-the [libc++ C++ standard library](https://libcxx.llvm.org),
-the [LLD linker](https://lld.llvm.org), and more.
+int some_func(int %value) { return *value; }
 
-## Getting the Source Code and Building LLVM
+int main() {
+    int %value = std::make_unique<int>(1);
+    some_func(std::move(value));
+}
+```
 
-Consult the
-[Getting Started with LLVM](https://llvm.org/docs/GettingStarted.html#getting-the-source-code-and-building-llvm)
-page for information on building and running LLVM.
+> [!NOTE]
+> Caution with the tokens. It can be interpreted as a trigraph in case of templates
+> For examples: `vector<int %>`. `%>` trigraph means `}`. To accept this syntax a space must be insert between the 2 characters.
 
-For information on how to contribute to the LLVM project, please take a look at
-the [Contributing to LLVM](https://llvm.org/docs/Contributing.html) guide.
+### 2. Command Line Argument
 
-## Getting in touch
+Specify what smart pointer to use for a specific token.
 
-Join the [LLVM Discourse forums](https://discourse.llvm.org/), [Discord
-chat](https://discord.gg/xS7Z362),
-[LLVM Office Hours](https://llvm.org/docs/GettingInvolved.html#office-hours) or
-[Regular sync-ups](https://llvm.org/docs/GettingInvolved.html#online-sync-ups).
+```bash
+clang++   '-smart-pointer=%,std::unique_ptr'  test.cpp
+```
 
-The LLVM project has adopted a [code of conduct](https://llvm.org/docs/CodeOfConduct.html) for
-participants to all modes of communication within the project.
+## Documentation
+
+You can specify multiple token for different smart pointers
+
+```bash
+clang++ \
+    -smart-pointer=%,std::shared_ptr   \
+    '-smart-pointer=|,std::unique_ptr' \
+    a.c
+clang++   -smart-pointer=%,std::weak_ptr      a.c
+clang++   -smart-pointer=|,std::shared_ptr    a.c
+```
