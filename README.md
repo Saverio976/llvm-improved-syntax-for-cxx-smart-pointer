@@ -46,3 +46,21 @@ clang++ \
 clang++   -smart-pointer=%,std::weak_ptr      a.c
 clang++   -smart-pointer=|,std::shared_ptr    a.c
 ```
+
+## Build
+
+```
+# if you have not clone the project:
+git clone https://github.com/Saverio976/llvm-improved-syntax-for-cxx-smart-pointer.git llvm-smart-pointer-syntax
+cd llvm-smart-pointer-syntax
+# in the repository folder
+mkdir build
+cd build
+# in the build folder
+cmake -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra" -DCMAKE_BUILD_TYPE=Release ../llvm
+make # you can specify how much core on your cpu to use. for example with 4 cores: -j4
+# make -j4
+```
+
+- The `clang++` binary will be at `./bin/clang++`
+- The `clangd` binary will be at `./bin/clangd`
