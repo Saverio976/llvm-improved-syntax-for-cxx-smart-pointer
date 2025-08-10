@@ -327,6 +327,7 @@ bool Declarator::isDeclarationOfFunction() const {
     case DeclaratorChunk::Paren:
       continue;
     case DeclaratorChunk::Pointer:
+    case DeclaratorChunk::SmartPointer:
     case DeclaratorChunk::Reference:
     case DeclaratorChunk::Array:
     case DeclaratorChunk::BlockPointer:

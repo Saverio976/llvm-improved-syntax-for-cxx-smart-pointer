@@ -5124,6 +5124,11 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   // FIXME: Implement custom jobs for internal actions.
   CmdArgs.push_back("-cc1");
 
+   for (const Arg *A : Args.filtered(options::OPT_smart_pointer)) {
+     CmdArgs.push_back(Args.MakeArgString(Twine("-smart-pointer=") + A->getValue()));
+     A->claim();
+   }
+
   // Add the "effective" target triple.
   CmdArgs.push_back("-triple");
   CmdArgs.push_back(Args.MakeArgString(TripleStr));
