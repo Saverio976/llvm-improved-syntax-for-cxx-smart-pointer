@@ -1126,6 +1126,11 @@ def fconvergent_functions : Flag<["-"], "fconvergent-functions">,
 def fno_convergent_functions : Flag<["-"], "fno-convergent-functions">,
   Visibility<[ClangOption, CC1Option]>;
 
+def smart_pointer : Joined<["-"], "smart-pointer=">,
+  Group<CompileOnly_Group>, Visibility<[ClangOption, CC1Option]>,
+  HelpText< "Class to use for the custom smart pointer syntax. Member of std namespace">,
+  MarshallingInfoStringVector<LangOpts<"SmartPointers">>;
+
 // Common offloading options
 let Group = offload_Group in {
 def offload_arch_EQ : Joined<["--"], "offload-arch=">,

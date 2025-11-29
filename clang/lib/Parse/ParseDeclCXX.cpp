@@ -1578,6 +1578,9 @@ bool Parser::isValidAfterTypeSpecifier(bool CouldBeBitfield) {
   default:
     if (Tok.isRegularKeywordAttribute())
       return true;
+    if (getLangOpts().getSmartPointerFromName(tok::getPunctuatorSpelling(Tok.getKind())) != "") {
+      return true;
+    }
     break;
   case tok::semi:              // struct foo {...} ;
   case tok::star:              // struct foo {...} *         P;
