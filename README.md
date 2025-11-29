@@ -4,6 +4,9 @@
 > [!NOTE]
 > This fork is part of my dissertation at [Heriot Watt University](https://www.hw.ac.uk/), [School of Mathematical and Computer Science](https://www.hw.ac.uk/about/our-schools/mathematical-and-computer-sciences).
 
+> [!NOTE]
+> The dissertation is available [there](./An_Improved_Syntax_for_C%2B%2B_Smart_Pointers.pdf).
+
 # LLVM - An Improved Syntax for C++ Smart Pointers
 
 ## Usage
